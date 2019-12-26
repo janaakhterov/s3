@@ -2,7 +2,7 @@ use crate::{buf_mut::BufMut, region::Region, signing_key::SigningKey};
 use chrono::{DateTime, Utc};
 use reqwest::header::{HeaderMap, HeaderValue, InvalidHeaderValue};
 use sha2::{Digest, Sha256};
-use std::error::Error;
+use std::fmt::Display;
 
 pub struct AuthBuilder<'a> {
     region: Region,
@@ -51,8 +51,9 @@ impl<'a> AuthBuilder<'a> {
     }
 
     pub fn set_resource<T: AsRef<str>>(&mut self, resource: Option<T>) {
+        self.canonical.push(b'/');
+
         if let Some(resource) = resource {
-            self.canonical.push(b'/');
             self.canonical
                 .extend_from_slice(resource.as_ref().as_bytes());
         }
@@ -75,13 +76,11 @@ impl<'a> AuthBuilder<'a> {
         self.canonical.push(b'\n');
     }
 
-    pub fn build(
+    pub fn build<T: AsRef<str> + Display>(
         self,
-        access_key: &str,
+        access_key: T,
         signing_key: &SigningKey,
-    ) -> Result<(), InvalidHeaderValue> {
-        println!("{}", String::from_utf8_lossy(&self.canonical));
-
+    ) -> Result<(), crate::Error> {
         let mut hasher = Sha256::new();
         hasher.input(self.canonical);
         let canonical = hex::encode(hasher.result().as_slice());
@@ -101,27 +100,15 @@ impl<'a> AuthBuilder<'a> {
             hash = canonical
         );
 
-        println!("string_to_sign:");
-        println!("{}", string_to_sign);
-        println!("-------------------------------------------");
-
         let sig = signing_key.sign(string_to_sign);
 
-        println!("signature:");
-        println!("{}", sig);
-        println!("-------------------------------------------");
-
         let auth = format!(
-            "AMS4-HMCA-SHA256 Credential={access_key}/{scope},SignedHeaders={signed_headers},Signature={signature}",
+            "AWS4-HMAC-SHA256 Credential={access_key}/{scope},SignedHeaders={signed_headers},Signature={signature}",
             access_key = access_key,
             scope = scope,
             signed_headers = self.signed.join(";"),
             signature = sig
         );
-
-        println!("auth header:");
-        println!("{}", auth);
-        println!("-------------------------------------------");
 
         self.headers
             .insert("Authorization", HeaderValue::from_str(&auth)?);

@@ -1,8 +1,8 @@
-use crate::{auth_builder::AuthBuilder, buf_mut::BufMut, region::Region, signing_key::SigningKey};
-use chrono::{offset::TimeZone, Utc};
-use reqwest::{header::HeaderValue, Method, Request, Url};
-use sha2::{Digest, Sha256};
+use crate::{Error, AmzRequest, AuthBuilder, Headers, Region, SigningKey};
+use chrono::Utc;
+use reqwest::{Method, Request, Url};
 use std::fmt::Display;
+use futures_core::future::BoxFuture;
 
 pub struct GetObject<T: AsRef<str> + Display> {
     pub bucket: T,
@@ -41,22 +41,32 @@ impl<T: AsRef<str> + Display> GetObject<T> {
         self
     }
 
-    pub fn into_request(
+    pub fn version_id(mut self, version_id: T) -> Self {
+        self.version_id = Some(version_id);
+        self
+    }
+}
+
+impl<T: AsRef<str> + Display> AmzRequest for GetObject<T> {
+    type Response = bytes::Bytes;
+
+    fn into_request<S: AsRef<str> + Display>(
         self,
         url: Url,
-        access_key: &str,
+        access_key: S,
         signing_key: &SigningKey,
         region: Region,
-    ) -> Result<Request, Box<dyn std::error::Error>> {
+    ) -> Result<Request, Error> {
         // GetObject request do not have a payload; ever. So, computing one here
         // is a waste of time.
         let payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
-        let datetime = Utc.ymd(2013, 05, 24).and_hms(0, 0, 0);
+        let datetime = Utc::now();
         let date = format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
 
-        let url = url.join(&format!("{}/", self.bucket))?;
-        let url = url.join(&self.name.as_ref())?;
+        let resource = format!("{}/{}", self.bucket, self.name.as_ref());
+
+        let url = url.join(&resource)?;
 
         let mut request = Request::new(Method::GET, url.clone());
 
@@ -68,20 +78,22 @@ impl<T: AsRef<str> + Display> GetObject<T> {
         );
 
         // Resource
-        sig.set_resource(Some(&self.name));
+        sig.set_resource(Some(&resource));
         sig.set_query_params();
 
-        sig.add_header(Headers::HOST, &url.domain().unwrap_or(""));
+        let host = url.host_str().unwrap();
+
+        sig.add_header(Headers::HOST, &host)?;
 
         if let Some(range) = self.range {
-            sig.add_header(Headers::RANGE, range);
+            sig.add_header(Headers::RANGE, range)?;
         }
 
-        sig.add_header(Headers::X_AMZ_CONTENT_SHA256, &payload_hash);
-        sig.add_header(Headers::X_AMZ_DATE, &date);
+        sig.add_header(Headers::X_AMZ_CONTENT_SHA256, &payload_hash)?;
+        sig.add_header(Headers::X_AMZ_DATE, &date)?;
 
         if let Some(version_id) = self.version_id {
-            sig.add_header(Headers::VERSION_ID, version_id);
+            sig.add_header(Headers::VERSION_ID, version_id)?;
         }
 
         sig.set_signed_headers();
@@ -90,39 +102,12 @@ impl<T: AsRef<str> + Display> GetObject<T> {
 
         sig.build(&access_key, &signing_key)?;
 
-        println!("{:#?}", request);
+        Ok(request)
+    }
 
-        Ok(Request::new(
-            Method::GET,
-            Url::parse("https://google.com/").unwrap(),
-        ))
+    fn into_response(response: reqwest::Response) -> BoxFuture<'static, Result<Self::Response, Error>> {
+        Box::pin(async move {
+            Ok(response.bytes().await?)
+        })
     }
 }
-
-struct Headers;
-
-impl Headers {
-    const HOST: &'static str = "host";
-    const IF_MATCH: &'static str = "if-match";
-    const IF_MODIFIED_SINCE: &'static str = "if-modified-since";
-    const IF_NONE_MATCHED: &'static str = "if-none-matched";
-    const IF_UNMODIFIED_SINCE: &'static str = "if-unmodified-since";
-    const PART_NUMBER: &'static str = "part-number";
-    const RANGE: &'static str = "range";
-    const REQUEST_PAYER: &'static str = "request-payer";
-    const RESPONSE_CACHE_CONTROL: &'static str = "response-cache-control";
-    const RESPONSE_CONTENT_DISPOSITION: &'static str = "response-content-disposition";
-    const RESPONSE_CONTENT_ENCODING: &'static str = "response-content-encoding";
-    const RESPONSE_CONTENT_LANGUAGE: &'static str = "responsee-content-language";
-    const RESPONSE_CONTENT_TYPE: &'static str = "response-content-type";
-    const RESPONSE_EXPIRES: &'static str = "response-expires";
-    const SSE_CUSTOMER_ALGORITHM: &'static str = "sse-customer-algorithm";
-    const SSE_CUSTOMER_KEY: &'static str = "sse-customer-key";
-    const SSE_CUSTOMER_KEY_MD5: &'static str = "sse-customer-key-md5";
-    const VERSION_ID: &'static str = "vesrion-id";
-    const X_AMZ_CONTENT_SHA256: &'static str = "x-amz-content-sha256";
-    const X_AMZ_DATE: &'static str = "x-amz-date";
-}
-
-// impl AmzRequest for GetObject {
-// }
