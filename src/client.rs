@@ -1,18 +1,20 @@
-use crate::{AmzRequest, get_object::GetObject, Region, SigningKey};
+use crate::{error::ResponseError, Error};
+use crate::{
+    get_object::{AwsObject, GetObject},
+    Region, S3Request, SigningKey,
+};
 use chrono::{DateTime, Utc};
-use std::fmt::Display;
 use reqwest::Url;
-use crate::{Error, error::ResponseError};
 
 #[derive(Debug)]
-pub struct ClientBuilder<T: AsRef<str> + Display> {
+pub struct ClientBuilder<T: AsRef<str>> {
     region: Region,
     host: Option<T>,
     access_key: Option<T>,
     secret_key: Option<T>,
 }
 
-impl<T: AsRef<str> + Display> Default for ClientBuilder<T> {
+impl<T: AsRef<str>> Default for ClientBuilder<T> {
     fn default() -> Self {
         Self {
             region: Region::UsEast1,
@@ -23,16 +25,13 @@ impl<T: AsRef<str> + Display> Default for ClientBuilder<T> {
     }
 }
 
-impl<T: AsRef<str> + Display> ClientBuilder<T> {
+impl<T: AsRef<str>> ClientBuilder<T> {
     pub fn new() -> Self {
         ClientBuilder::default()
     }
 
     pub fn region(self, region: Region) -> Self {
-        Self {
-            region,
-            ..self
-        }
+        Self { region, ..self }
     }
 
     pub fn host(self, host: T) -> Self {
@@ -78,7 +77,12 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new<T: AsRef<str> + Display>(access_key: T, secret_key: T, region: Region, host: T) -> Result<Self, Error> {
+    pub fn new<T: AsRef<str>>(
+        access_key: T,
+        secret_key: T,
+        region: Region,
+        host: T,
+    ) -> Result<Self, Error> {
         let date = Utc::now();
         Ok(Self {
             client: reqwest::Client::new(),
@@ -86,20 +90,24 @@ impl Client {
             region,
             date,
             host: Url::parse(&host.as_ref())?,
-            access_key: access_key.as_ref().to_owned()
+            access_key: access_key.as_ref().to_owned(),
         })
     }
 
-    pub fn builder<T: AsRef<str> + Display>() -> ClientBuilder<T> {
+    pub fn builder<T: AsRef<str>>() -> ClientBuilder<T> {
         ClientBuilder::new()
     }
 
-    pub async fn get_object<T: AsRef<str> + Display>(&self, bucket: T, signing_key: T) -> Result<bytes::Bytes, Error> {
+    pub async fn get_object<T: AsRef<str>>(
+        &self,
+        bucket: T,
+        signing_key: T,
+    ) -> Result<AwsObject, Error> {
         let request = GetObject::new(bucket, signing_key);
         self.send(request).await
     }
 
-    pub async fn send<T: AmzRequest>(&self, request: T) -> Result<T::Response, Error> {
+    pub async fn send<T: S3Request>(&self, request: T) -> Result<T::Response, Error> {
         let request = request.into_request(
             self.host.clone(),
             &self.access_key,
@@ -108,6 +116,8 @@ impl Client {
         )?;
 
         let response = self.client.execute(request).await?;
+
+        println!("{:#?}", response);
 
         if !response.status().is_success() {
             let bytes = response.bytes().await?;

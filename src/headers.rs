@@ -4,7 +4,7 @@ impl Headers {
     pub const HOST: &'static str = "host";
     pub const IF_MATCH: &'static str = "if-match";
     pub const IF_MODIFIED_SINCE: &'static str = "if-modified-since";
-    pub const IF_NONE_MATCHED: &'static str = "if-none-matched";
+    pub const IF_NONE_MATCH: &'static str = "if-none-match";
     pub const IF_UNMODIFIED_SINCE: &'static str = "if-unmodified-since";
     pub const PART_NUMBER: &'static str = "part-number";
     pub const RANGE: &'static str = "range";
@@ -23,4 +23,11 @@ impl Headers {
     pub const X_AMZ_DATE: &'static str = "x-amz-date";
 
     pub const AUTHORIZATION: &'static str = "authorization";
+    pub const DELETE_MARKER: &'static str = "x-amz-delete-marker";
+    pub const LAST_MODIFIED: &'static str = "last-modified";
+    pub const ETAG: &'static str = "etag";
+    pub const EXPIRES: &'static str = "expires";
+    pub const PARTS_COUNT: &'static str = "x-amz-mp-parts-count";
+    pub const X_AMZ_VERSION_ID: &'static str = "x-amz-version-id";
+    pub const X_AMZ_STORAGE_CLASS: &'static str = "x-amz-storage-class";
 }

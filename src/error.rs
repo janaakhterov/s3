@@ -41,4 +41,16 @@ pub enum Error {
 
     #[error("Failed to parse chrono datetime")]
     ChronoParseError(#[from] chrono::ParseError),
+
+    #[error("Failed to a number in header")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Storage class header provided, but failed to parse it")]
+    ParseStorageClassError,
+
+    #[error("Aws Response did not have an etag header present")]
+    NoEtagInRespoinse,
+
+    #[error("last-modified header is not present on the response to a get object request")]
+    LastModifiedNotPresentOnGetResponse,
 }

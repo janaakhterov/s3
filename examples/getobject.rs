@@ -1,6 +1,7 @@
 extern crate s3;
 
-use s3::Client;
+use s3::{Client, GetObject};
+use chrono::{offset::TimeZone, Utc};
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
 static ACCESS_KEY: &'static str = "6KSUI28SEVTXB63GLSLU";
@@ -15,9 +16,11 @@ async fn main() -> Result<(), anyhow::Error> {
         .secret_key(&SECRET_ACCESS_KEY)
         .build()?;
 
-    let bytes = client.get_object("test", "vimrc").await?;
+    let resp = client.send(GetObject::new("test", "vimrc")
+        .range(0u64, 100u64)
+        .if_modified_since(Utc.ymd(2019, 12, 25).and_hms(0, 0, 0))).await?;
 
-    println!("{}", String::from_utf8_lossy(&bytes));
+    println!("{:#?}", resp);
 
     Ok(())
 }

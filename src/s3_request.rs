@@ -1,12 +1,11 @@
 use crate::{Error, Region, SigningKey};
 use futures_core::future::BoxFuture;
 use reqwest::{Request, Url};
-use std::fmt::Display;
 
-pub trait AmzRequest {
+pub trait S3Request {
     type Response;
 
-    fn into_request<T: AsRef<str> + Display>(
+    fn into_request<T: AsRef<str>>(
         self,
         url: Url,
         access_key: T,
