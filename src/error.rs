@@ -27,6 +27,18 @@ pub enum Error {
     #[error("Failed to build client because not all fields were provided")]
     ClientBuildError,
 
+    #[error("x-amz-date was not set when signing a request")]
+    DateHeaderUnsetWhenSigning,
+
+    #[error("Host was not set in the url")]
+    HostStrUnset,
+
+    #[error("x-amz-date was not encoded correctly")]
+    DateHeaderToStrError(#[from] reqwest::header::ToStrError),
+
     #[error("Failed to parse url")]
-    ParseError(#[from] url::ParseError),
+    UrlParseError(#[from] url::ParseError),
+
+    #[error("Failed to parse chrono datetime")]
+    ChronoParseError(#[from] chrono::ParseError),
 }

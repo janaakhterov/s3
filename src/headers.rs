@@ -21,4 +21,6 @@ impl Headers {
     pub const VERSION_ID: &'static str = "vesrion-id";
     pub const X_AMZ_CONTENT_SHA256: &'static str = "x-amz-content-sha256";
     pub const X_AMZ_DATE: &'static str = "x-amz-date";
+
+    pub const AUTHORIZATION: &'static str = "authorization";
 }

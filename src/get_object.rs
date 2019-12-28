@@ -1,8 +1,31 @@
-use crate::{Error, AmzRequest, AuthBuilder, Headers, Region, SigningKey};
+use crate::{Error, AmzRequest, Headers, Region, SigningKey, sign_request};
 use chrono::Utc;
-use reqwest::{Method, Request, Url};
+use reqwest::{Method, Request, Url, header::HeaderValue};
 use std::fmt::Display;
 use futures_core::future::BoxFuture;
+
+pub const HEADERS: [&'static str; 20] = [
+    Headers::HOST,
+    Headers::IF_MATCH,
+    Headers::IF_MODIFIED_SINCE,
+    Headers::IF_NONE_MATCHED,
+    Headers::IF_UNMODIFIED_SINCE,
+    Headers::PART_NUMBER,
+    Headers::RANGE,
+    Headers::REQUEST_PAYER,
+    Headers::RESPONSE_CACHE_CONTROL,
+    Headers::RESPONSE_CONTENT_DISPOSITION,
+    Headers::RESPONSE_CONTENT_ENCODING,
+    Headers::RESPONSE_CONTENT_LANGUAGE,
+    Headers::RESPONSE_CONTENT_TYPE,
+    Headers::RESPONSE_EXPIRES,
+    Headers::SSE_CUSTOMER_ALGORITHM,
+    Headers::SSE_CUSTOMER_KEY,
+    Headers::SSE_CUSTOMER_KEY_MD5,
+    Headers::VERSION_ID,
+    Headers::X_AMZ_CONTENT_SHA256,
+    Headers::X_AMZ_DATE,
+];
 
 pub struct GetObject<T: AsRef<str> + Display> {
     pub bucket: T,
@@ -65,42 +88,33 @@ impl<T: AsRef<str> + Display> AmzRequest for GetObject<T> {
         let date = format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
 
         let resource = format!("{}/{}", self.bucket, self.name.as_ref());
-
         let url = url.join(&resource)?;
 
         let mut request = Request::new(Method::GET, url.clone());
+        let headers = request.headers_mut();
 
-        let mut sig = AuthBuilder::new(
-            request.headers_mut(),
-            Method::GET.as_str(),
-            region,
-            datetime,
-        );
+        let host = url.host_str().ok_or(Error::HostStrUnset)?;
 
-        // Resource
-        sig.set_resource(Some(&resource));
-        sig.set_query_params();
-
-        let host = url.host_str().unwrap();
-
-        sig.add_header(Headers::HOST, &host)?;
+        headers.insert(Headers::HOST, HeaderValue::from_str(&host)?);
 
         if let Some(range) = self.range {
-            sig.add_header(Headers::RANGE, range)?;
+            headers.insert(Headers::RANGE, HeaderValue::from_str(&range)?);
         }
 
-        sig.add_header(Headers::X_AMZ_CONTENT_SHA256, &payload_hash)?;
-        sig.add_header(Headers::X_AMZ_DATE, &date)?;
+        headers.insert(Headers::X_AMZ_CONTENT_SHA256, HeaderValue::from_str(&payload_hash)?);
+        headers.insert(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
 
         if let Some(version_id) = self.version_id {
-            sig.add_header(Headers::VERSION_ID, version_id)?;
+            headers.insert(Headers::VERSION_ID, HeaderValue::from_str(version_id.as_ref())?);
         }
 
-        sig.set_signed_headers();
-
-        sig.set_payload(&payload_hash);
-
-        sig.build(&access_key, &signing_key)?;
+        sign_request(
+            &mut request, 
+            &access_key, 
+            &signing_key, 
+            region.clone(), 
+            &HEADERS
+        )?;
 
         Ok(request)
     }
