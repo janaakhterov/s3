@@ -1,9 +1,9 @@
-use crate::{sign_request, Error, Headers, Region, S3Request, SigningKey, StorageClass};
+use crate::{sign_request, Error, Gmt, Headers, Region, S3Request, SigningKey, StorageClass};
 use chrono::{DateTime, Utc};
 use futures_core::future::BoxFuture;
 use http::uri::{PathAndQuery, Uri};
 use http_body::Body;
-use hyper::{header::HeaderValue, Body as HttpBody, Method, Request};
+use hyper::{header::HeaderValue, Body as HttpBody, Method, Request, Response};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
@@ -98,7 +98,7 @@ impl<T: AsRef<str>> GetObject<T> {
 }
 
 #[derive(Debug)]
-pub struct AwsObject {
+pub struct GetObjectResponse {
     pub last_modified: DateTime<Utc>,
     pub etag: String,
     pub version_id: Option<String>,
@@ -108,14 +108,14 @@ pub struct AwsObject {
     pub body: Vec<u8>,
 }
 
-impl AwsObject {
+impl GetObjectResponse {
     pub fn as_str(&self) -> std::borrow::Cow<str> {
         String::from_utf8_lossy(&self.body)
     }
 }
 
 impl<T: AsRef<str>> S3Request for GetObject<T> {
-    type Response = AwsObject;
+    type Response = GetObjectResponse;
 
     fn into_request<AR: AsRef<str>>(
         self,
@@ -129,7 +129,9 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         let payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
         let datetime = Utc::now();
-        let date = format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
+        // Formatting date in rfc1123 was rejected by minio even though it says to use that format
+        // instead using format from aws examples YYYYMMDDTHHMMSSZ
+        let date = &format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
 
         let resource = PathAndQuery::try_from(
             format!("/{}/{}", self.bucket.as_ref(), self.name.as_ref()).as_str(),
@@ -165,7 +167,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         if let Some(if_modified_since) = self.if_modified_since {
             request = request.header(
                 Headers::IF_MODIFIED_SINCE,
-                HeaderValue::from_str(&format!("{}", if_modified_since.format("%Y%m%dT%H%M%SZ")))?,
+                HeaderValue::from_str(&if_modified_since.to_gmt())?,
                 // HeaderValue::from_str(&if_modified_since.to_rfc3339())?,
             );
         }
@@ -180,10 +182,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         if let Some(if_unmodified_since) = self.if_unmodified_since {
             request = request.header(
                 Headers::IF_UNMODIFIED_SINCE,
-                HeaderValue::from_str(&format!(
-                    "{}",
-                    if_unmodified_since.format("%Y%m%dT%H%M%SZ")
-                ))?,
+                HeaderValue::from_str(&if_unmodified_since.to_gmt())?,
             );
         }
 
@@ -218,7 +217,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
     }
 
     fn into_response(
-        mut response: hyper::Response<HttpBody>,
+        mut response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
             let last_modified = response
@@ -226,9 +225,8 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 .get(Headers::LAST_MODIFIED)
                 .map(HeaderValue::to_str)
                 .transpose()?
-                .map(DateTime::parse_from_rfc2822)
+                .map(DateTime::from_gmt)
                 .transpose()?
-                .map(|date| date.with_timezone(&Utc))
                 .ok_or(Error::LastModifiedNotPresentOnGetResponse)?;
 
             let etag: String = response
@@ -250,9 +248,8 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 .get(Headers::EXPIRES)
                 .map(HeaderValue::to_str)
                 .transpose()?
-                .map(DateTime::parse_from_rfc2822)
-                .transpose()?
-                .map(|date| date.with_timezone(&Utc));
+                .map(DateTime::from_gmt)
+                .transpose()?;
 
             let storage_class: StorageClass =
                 if let Some(header) = response.headers().get(Headers::X_AMZ_STORAGE_CLASS) {
@@ -276,7 +273,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 bytes.extend_from_slice(&chunk);
             }
 
-            Ok(AwsObject {
+            Ok(GetObjectResponse {
                 last_modified,
                 etag,
                 version_id,

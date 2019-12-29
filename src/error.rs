@@ -36,7 +36,7 @@ pub enum Error {
     #[error("x-amz-date was not encoded correctly")]
     DateHeaderToStrError(#[from] hyper::header::ToStrError),
 
-    #[error("Failed to parse chrono datetime")]
+    #[error("Failed to parse chrono datetime: {0:?}")]
     ChronoParseError(#[from] chrono::ParseError),
 
     #[error("Failed to a number in header")]

@@ -39,6 +39,7 @@ impl SigningKey {
     }
 
     /// Signs the string and returns the hex encoded signature
+    #[inline(always)]
     pub fn sign<T: AsRef<str>>(&self, s: T) -> String {
         let tag = hmac::sign(&self.key, s.as_ref().as_bytes());
         hex::encode(tag.as_ref())

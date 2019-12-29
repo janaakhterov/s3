@@ -1,6 +1,7 @@
 use crate::{error::ResponseError, Error};
 use crate::{
-    get_object::{AwsObject, GetObject},
+    get_object::{GetObject, GetObjectResponse},
+    put_object::PutObject,
     Region, S3Request, SigningKey,
 };
 use chrono::{DateTime, Utc};
@@ -104,9 +105,19 @@ impl Client {
     pub async fn get_object<T: AsRef<str>>(
         &self,
         bucket: T,
-        signing_key: T,
-    ) -> Result<AwsObject, Error> {
-        let request = GetObject::new(bucket, signing_key);
+        key: T,
+    ) -> Result<GetObjectResponse, Error> {
+        let request = GetObject::new(bucket, key);
+        self.send(request).await
+    }
+
+    pub async fn put_object<T: AsRef<str>>(
+        &self,
+        bucket: T,
+        key: T,
+        contents: Vec<u8>,
+    ) -> Result<String, Error> {
+        let request = PutObject::new(bucket, key, contents);
         self.send(request).await
     }
 

@@ -30,4 +30,6 @@ impl Headers {
     pub const PARTS_COUNT: &'static str = "x-amz-mp-parts-count";
     pub const X_AMZ_VERSION_ID: &'static str = "x-amz-version-id";
     pub const X_AMZ_STORAGE_CLASS: &'static str = "x-amz-storage-class";
+
+    pub const CONTENT_MD5: &'static str = "content-md5";
 }
