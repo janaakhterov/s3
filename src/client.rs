@@ -4,7 +4,10 @@ use crate::{
     Region, S3Request, SigningKey,
 };
 use chrono::{DateTime, Utc};
-use reqwest::Url;
+use http::Uri;
+use http_body::Body;
+use hyper::Body as HttpBody;
+use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct ClientBuilder<T: AsRef<str>> {
@@ -68,12 +71,12 @@ impl<T: AsRef<str>> ClientBuilder<T> {
 
 #[derive(Debug)]
 pub struct Client {
-    client: reqwest::Client,
+    client: hyper::Client<hyper::client::HttpConnector, HttpBody>,
     access_key: String,
     signing_key: SigningKey,
     region: Region,
     date: DateTime<Utc>,
-    host: Url,
+    host: Uri,
 }
 
 impl Client {
@@ -85,11 +88,11 @@ impl Client {
     ) -> Result<Self, Error> {
         let date = Utc::now();
         Ok(Self {
-            client: reqwest::Client::new(),
+            client: hyper::Client::builder().build_http(),
             signing_key: SigningKey::from_date(&secret_key.as_ref(), &date.clone(), region.clone()),
             region,
             date,
-            host: Url::parse(&host.as_ref())?,
+            host: Uri::try_from(host.as_ref())?,
             access_key: access_key.as_ref().to_owned(),
         })
     }
@@ -115,12 +118,17 @@ impl Client {
             self.region.clone(),
         )?;
 
-        let response = self.client.execute(request).await?;
+        let mut response = self.client.request(request).await?;
 
         println!("{:#?}", response);
 
         if !response.status().is_success() {
-            let bytes = response.bytes().await?;
+            let mut bytes: Vec<u8> = Vec::new();
+
+            while let Some(next) = response.data().await {
+                let chunk = next?;
+                bytes.extend_from_slice(&chunk);
+            }
             let error = String::from_utf8_lossy(&bytes);
             println!("{}", error);
 

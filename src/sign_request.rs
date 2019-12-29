@@ -1,31 +1,42 @@
 use crate::{Error, Headers, Region, SigningKey};
 use chrono::NaiveDateTime;
-use reqwest::{header::HeaderValue, Request};
+use http::request::Builder;
+use hyper::header::HeaderValue;
 use sha2::{Digest, Sha256};
 
 pub(crate) fn sign_request<T: AsRef<str>>(
-    request: &mut Request,
+    mut request: Builder,
     access_key: T,
     signing_key: &SigningKey,
     region: Region,
     headers: &'static [&'static str],
-) -> Result<(), Error> {
+) -> Result<Builder, Error> {
     let mut canonical: Vec<u8> = Vec::new();
     let mut signed: Vec<&str> = Vec::new();
 
     // Request Method
-    canonical.extend_from_slice(&request.method().as_str().as_bytes());
+    canonical.extend_from_slice(
+        &request
+            .method_ref()
+            .ok_or(Error::MethodNotSet)?
+            .as_str()
+            .as_bytes(),
+    );
     canonical.push(b'\n');
 
-    // Request Method
-    canonical.extend_from_slice(&request.url().path().as_bytes());
+    // Resource
+    canonical.extend_from_slice(&request.uri_ref().ok_or(Error::UriNotSet)?.path().as_bytes());
     canonical.push(b'\n');
 
     // TODO: QueryParameters
     canonical.push(b'\n');
 
     for header in headers {
-        if let Some(value) = request.headers().get(*header) {
+        if let Some(value) = request
+            .headers_ref()
+            .ok_or(Error::HeadersNotSet)?
+            .get(*header)
+        {
             canonical.extend_from_slice(&header.as_bytes());
             canonical.push(b':');
             canonical.extend_from_slice(&value.as_bytes());
@@ -46,7 +57,11 @@ pub(crate) fn sign_request<T: AsRef<str>>(
     canonical.push(b'\n');
 
     // X_AMZ_CONTENT_SHA256 should ALWAYS be set
-    if let Some(header) = request.headers().get(Headers::X_AMZ_CONTENT_SHA256) {
+    if let Some(header) = request
+        .headers_ref()
+        .ok_or(Error::HeadersNotSet)?
+        .get(Headers::X_AMZ_CONTENT_SHA256)
+    {
         canonical.extend_from_slice(&header.as_bytes());
     }
 
@@ -58,7 +73,8 @@ pub(crate) fn sign_request<T: AsRef<str>>(
     let region: String = region.into();
 
     let date = request
-        .headers()
+        .headers_ref()
+        .ok_or(Error::HeadersNotSet)?
         .get(Headers::X_AMZ_DATE)
         .ok_or(Error::DateHeaderUnsetWhenSigning)?
         .to_str()?;
@@ -88,9 +104,7 @@ pub(crate) fn sign_request<T: AsRef<str>>(
         signature = sig
     );
 
-    request
-        .headers_mut()
-        .insert(Headers::AUTHORIZATION, HeaderValue::from_str(&auth)?);
+    request = request.header(Headers::AUTHORIZATION, HeaderValue::from_str(&auth)?);
 
-    Ok(())
+    Ok(request)
 }

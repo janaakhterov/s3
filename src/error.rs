@@ -1,4 +1,4 @@
-use reqwest::header::InvalidHeaderValue;
+use hyper::header::InvalidHeaderValue;
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -13,7 +13,7 @@ pub struct ResponseError {
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Error sending request")]
-    RequestError(#[from] reqwest::Error),
+    RequestError(#[from] hyper::Error),
 
     #[error("Received an error while executing a request: {0:?}")]
     ResponseError(ResponseError),
@@ -34,10 +34,7 @@ pub enum Error {
     HostStrUnset,
 
     #[error("x-amz-date was not encoded correctly")]
-    DateHeaderToStrError(#[from] reqwest::header::ToStrError),
-
-    #[error("Failed to parse url")]
-    UrlParseError(#[from] url::ParseError),
+    DateHeaderToStrError(#[from] hyper::header::ToStrError),
 
     #[error("Failed to parse chrono datetime")]
     ChronoParseError(#[from] chrono::ParseError),
@@ -45,8 +42,23 @@ pub enum Error {
     #[error("Failed to a number in header")]
     ParseIntError(#[from] std::num::ParseIntError),
 
+    #[error("Invalid URI")]
+    InvalidUri(#[from] http::uri::InvalidUri),
+
+    #[error("Http Error")]
+    HttpError(#[from] http::Error),
+
     #[error("Storage class header provided, but failed to parse it")]
     ParseStorageClassError,
+
+    #[error("Method was not set on request during signing, but is required")]
+    MethodNotSet,
+
+    #[error("Uri was not set on request during signing, but is required")]
+    UriNotSet,
+
+    #[error("Headers was not set on request during signing, but is required")]
+    HeadersNotSet,
 
     #[error("Aws Response did not have an etag header present")]
     NoEtagInRespoinse,

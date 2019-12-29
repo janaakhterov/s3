@@ -1,9 +1,10 @@
 use crate::{sign_request, Error, Headers, Region, S3Request, SigningKey, StorageClass};
-use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use futures_core::future::BoxFuture;
-use reqwest::{header::HeaderValue, Method, Request, Url};
-use std::ops::Deref;
+use http::uri::{PathAndQuery, Uri};
+use http_body::Body;
+use hyper::{header::HeaderValue, Body as HttpBody, Method, Request};
+use std::convert::TryFrom;
 use std::str::FromStr;
 
 pub const HEADERS: [&'static str; 20] = [
@@ -104,27 +105,25 @@ pub struct AwsObject {
     pub expires: Option<DateTime<Utc>>,
     pub storage_class: StorageClass,
     pub parts_count: Option<u64>,
-    pub body: Bytes,
+    pub body: Vec<u8>,
 }
 
-impl Deref for AwsObject {
-    type Target = Bytes;
-
-    fn deref(&self) -> &Self::Target {
-        &self.body
+impl AwsObject {
+    pub fn as_str(&self) -> std::borrow::Cow<str> {
+        String::from_utf8_lossy(&self.body)
     }
 }
 
 impl<T: AsRef<str>> S3Request for GetObject<T> {
     type Response = AwsObject;
 
-    fn into_request<S: AsRef<str>>(
+    fn into_request<AR: AsRef<str>>(
         self,
-        url: Url,
-        access_key: S,
+        uri: Uri,
+        access_key: AR,
         signing_key: &SigningKey,
         region: Region,
-    ) -> Result<Request, Error> {
+    ) -> Result<Request<HttpBody>, Error> {
         // GetObject request do not have a payload; ever. So, computing one here
         // is a waste of time.
         let payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -132,22 +131,39 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         let datetime = Utc::now();
         let date = format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
 
-        let resource = format!("{}/{}", self.bucket.as_ref(), self.name.as_ref());
-        let url = url.join(&resource)?;
+        let resource = PathAndQuery::try_from(
+            format!("/{}/{}", self.bucket.as_ref(), self.name.as_ref()).as_str(),
+        )?;
 
-        let mut request = Request::new(Method::GET, url.clone());
-        let headers = request.headers_mut();
+        let parts = uri.clone().into_parts();
 
-        let host = url.host_str().ok_or(Error::HostStrUnset)?;
+        let mut uri = Uri::builder();
 
-        headers.insert(Headers::HOST, HeaderValue::from_str(&host)?);
+        if let Some(scheme) = parts.scheme {
+            uri = uri.scheme(scheme)
+        }
+
+        if let Some(authority) = parts.authority {
+            uri = uri.authority(authority)
+        }
+
+        let uri = uri.path_and_query(resource).build()?;
+
+        let host = uri.host().ok_or(Error::HostStrUnset)?.to_owned();
+
+        let mut request = Request::builder().method(Method::GET).uri(uri);
+
+        request = request.header(Headers::HOST, HeaderValue::from_str(&host)?);
 
         if let Some(if_match) = self.if_match {
-            headers.insert(Headers::IF_MATCH, HeaderValue::from_str(&if_match.as_ref())?);
+            request = request.header(
+                Headers::IF_MATCH,
+                HeaderValue::from_str(&if_match.as_ref())?,
+            );
         }
 
         if let Some(if_modified_since) = self.if_modified_since {
-            headers.insert(
+            request = request.header(
                 Headers::IF_MODIFIED_SINCE,
                 HeaderValue::from_str(&format!("{}", if_modified_since.format("%Y%m%dT%H%M%SZ")))?,
                 // HeaderValue::from_str(&if_modified_since.to_rfc3339())?,
@@ -155,14 +171,14 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         }
 
         if let Some(if_none_match) = self.if_none_match {
-            headers.insert(
+            request = request.header(
                 Headers::IF_NONE_MATCH,
                 HeaderValue::from_str(&if_none_match.as_ref())?,
             );
         }
 
         if let Some(if_unmodified_since) = self.if_unmodified_since {
-            headers.insert(
+            request = request.header(
                 Headers::IF_UNMODIFIED_SINCE,
                 HeaderValue::from_str(&format!(
                     "{}",
@@ -172,24 +188,24 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         }
 
         if let Some(range) = self.range {
-            headers.insert(Headers::RANGE, HeaderValue::from_str(&range)?);
+            request = request.header(Headers::RANGE, HeaderValue::from_str(&range)?);
         }
 
-        headers.insert(
+        request = request.header(
             Headers::X_AMZ_CONTENT_SHA256,
             HeaderValue::from_str(&payload_hash)?,
         );
-        headers.insert(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
+        request = request.header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
 
         if let Some(version_id) = self.version_id {
-            headers.insert(
+            request = request.header(
                 Headers::VERSION_ID,
                 HeaderValue::from_str(version_id.as_ref())?,
             );
         }
 
-        sign_request(
-            &mut request,
+        let request = sign_request(
+            request,
             &access_key.as_ref(),
             &signing_key,
             region.clone(),
@@ -198,11 +214,11 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
 
         println!("{:#?}", request);
 
-        Ok(request)
+        Ok(request.body(HttpBody::empty())?)
     }
 
     fn into_response(
-        response: reqwest::Response,
+        mut response: hyper::Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
             let last_modified = response
@@ -253,7 +269,12 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 .map(u64::from_str)
                 .transpose()?;
 
-            let body = response.bytes().await?;
+            let mut bytes: Vec<u8> = Vec::new();
+
+            while let Some(next) = response.data().await {
+                let chunk = next?;
+                bytes.extend_from_slice(&chunk);
+            }
 
             Ok(AwsObject {
                 last_modified,
@@ -262,7 +283,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 storage_class,
                 expires,
                 parts_count,
-                body,
+                body: bytes,
             })
         })
     }
