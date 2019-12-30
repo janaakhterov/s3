@@ -63,6 +63,9 @@ pub enum Error {
     #[error("Aws Response did not have an etag header present")]
     NoEtagInRespoinse,
 
+    #[error("Invalid uri parts")]
+    InvalidUriParts(#[from] http::uri::InvalidUriParts),
+
     #[error("last-modified header is not present on the response to a get object request")]
     LastModifiedNotPresentOnGetResponse,
 }

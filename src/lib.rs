@@ -3,7 +3,9 @@ pub(crate) use crate::{
     aws_response::AwsResponse,
     gmt::Gmt,
     headers::Headers,
-    sign_request::sign_request,
+    host::Host,
+    option_header::OptionHeader,
+    sign_request::SignRequest,
     signing_key::SigningKey,
 };
 
@@ -22,6 +24,8 @@ mod client;
 mod error;
 mod gmt;
 mod headers;
+mod host;
+mod option_header;
 mod region;
 mod sign_request;
 mod signing_key;

@@ -1,11 +1,13 @@
 use crate::{
-    sign_request,
     AwsRequest,
     AwsResponse,
     Error,
     Gmt,
     Headers,
+    Host,
+    OptionHeader,
     Region,
+    SignRequest,
     SigningKey,
 };
 use chrono::{
@@ -16,10 +18,7 @@ use futures_core::future::BoxFuture;
 use http::{
     header::HeaderValue,
     method::Method,
-    uri::{
-        PathAndQuery,
-        Uri,
-    },
+    uri::Uri,
 };
 use hyper::{
     Body as HttpBody,
@@ -30,7 +29,6 @@ use sha2::{
     Digest,
     Sha256,
 };
-use std::convert::TryFrom;
 
 pub const HEADERS: [&'static str; 5] = [
     Headers::CONTENT_MD5,
@@ -83,48 +81,17 @@ impl<T: AsRef<str>> AwsRequest for PutObject<T> {
         let datetime = Utc::now();
         let date = format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
 
-        let resource = PathAndQuery::try_from(
-            format!("/{}/{}", self.bucket.as_ref(), self.name.as_ref()).as_str(),
-        )?;
-
-        let parts = uri.clone().into_parts();
-
-        let mut uri = Uri::builder();
-
-        if let Some(scheme) = parts.scheme {
-            uri = uri.scheme(scheme)
-        }
-
-        if let Some(authority) = parts.authority {
-            uri = uri.authority(authority)
-        }
-
-        let uri = uri.path_and_query(resource).build()?;
-
-        let host = uri.host().ok_or(Error::HostStrUnset)?.to_owned();
-
-        let mut request = Request::builder().method(Method::PUT).uri(uri);
-
-        if let Some(expires) = self.expires {
-            request = request.header(Headers::EXPIRES, HeaderValue::from_str(&expires.to_gmt())?);
-        }
-
-        request = request.header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?);
-        request = request.header(Headers::HOST, HeaderValue::from_str(&host)?);
-
-        request = request.header(
-            Headers::X_AMZ_CONTENT_SHA256,
-            HeaderValue::from_str(&payload_hash)?,
-        );
-        request = request.header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
-
-        let request = sign_request(
-            request,
-            &access_key.as_ref(),
-            &signing_key,
-            region.clone(),
-            &HEADERS,
-        )?;
+        let request = Request::builder()
+            .method(Method::PUT)
+            .host(uri.clone(), self.bucket, self.name)?
+            .option_header(Headers::EXPIRES, &self.expires.map(|since| since.to_gmt()))?
+            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?)
+            .header(
+                Headers::X_AMZ_CONTENT_SHA256,
+                HeaderValue::from_str(&payload_hash)?,
+            )
+            .header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?)
+            .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
         println!("{:#?}", request);
 

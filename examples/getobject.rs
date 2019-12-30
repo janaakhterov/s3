@@ -26,7 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .send(
             GetObject::new("test", "putobject_example_file")
                 .range(0u64, 100u64)
-                .if_modified_since(Utc.ymd(2019, 12, 31).and_hms(0, 0, 0)),
+                .if_modified_since(Utc.ymd(2019, 12, 25).and_hms(0, 0, 0)),
         )
         .await?;
 

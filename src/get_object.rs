@@ -1,11 +1,13 @@
 use crate::{
-    sign_request,
     AwsRequest,
     AwsResponse,
     Error,
     Gmt,
     Headers,
+    Host,
+    OptionHeader,
     Region,
+    SignRequest,
     SigningKey,
     StorageClass,
 };
@@ -14,10 +16,7 @@ use chrono::{
     Utc,
 };
 use futures_core::future::BoxFuture;
-use http::uri::{
-    PathAndQuery,
-    Uri,
-};
+use http::uri::Uri;
 use http_body::Body;
 use hyper::{
     header::HeaderValue,
@@ -27,7 +26,6 @@ use hyper::{
     Response,
     StatusCode,
 };
-use std::convert::TryFrom;
 
 pub const HEADERS: [&'static str; 20] = [
     Headers::HOST,
@@ -155,83 +153,27 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T> {
         // instead using format from aws examples YYYYMMDDTHHMMSSZ
         let date = &format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
 
-        let resource = PathAndQuery::try_from(
-            format!("/{}/{}", self.bucket.as_ref(), self.name.as_ref()).as_str(),
-        )?;
-
-        let parts = uri.clone().into_parts();
-
-        let mut uri = Uri::builder();
-
-        if let Some(scheme) = parts.scheme {
-            uri = uri.scheme(scheme)
-        }
-
-        if let Some(authority) = parts.authority {
-            uri = uri.authority(authority)
-        }
-
-        let uri = uri.path_and_query(resource).build()?;
-
-        let host = uri.host().ok_or(Error::HostStrUnset)?.to_owned();
-
-        let mut request = Request::builder().method(Method::GET).uri(uri);
-
-        request = request.header(Headers::HOST, HeaderValue::from_str(&host)?);
-
-        if let Some(if_match) = self.if_match {
-            request = request.header(
-                Headers::IF_MATCH,
-                HeaderValue::from_str(&if_match.as_ref())?,
-            );
-        }
-
-        if let Some(if_modified_since) = self.if_modified_since {
-            request = request.header(
+        let request = Request::builder()
+            .method(Method::GET)
+            .host(uri.clone(), self.bucket, self.name)?
+            .option_header(Headers::IF_MATCH, &self.if_match)?
+            .option_header(
                 Headers::IF_MODIFIED_SINCE,
-                HeaderValue::from_str(&if_modified_since.to_gmt())?,
-                // HeaderValue::from_str(&if_modified_since.to_rfc3339())?,
-            );
-        }
-
-        if let Some(if_none_match) = self.if_none_match {
-            request = request.header(
-                Headers::IF_NONE_MATCH,
-                HeaderValue::from_str(&if_none_match.as_ref())?,
-            );
-        }
-
-        if let Some(if_unmodified_since) = self.if_unmodified_since {
-            request = request.header(
+                &self.if_modified_since.map(|since| since.to_gmt()),
+            )?
+            .option_header(Headers::IF_NONE_MATCH, &self.if_none_match)?
+            .option_header(
                 Headers::IF_UNMODIFIED_SINCE,
-                HeaderValue::from_str(&if_unmodified_since.to_gmt())?,
-            );
-        }
-
-        if let Some(range) = self.range {
-            request = request.header(Headers::RANGE, HeaderValue::from_str(&range)?);
-        }
-
-        request = request.header(
-            Headers::X_AMZ_CONTENT_SHA256,
-            HeaderValue::from_str(&payload_hash)?,
-        );
-        request = request.header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
-
-        if let Some(version_id) = self.version_id {
-            request = request.header(
-                Headers::VERSION_ID,
-                HeaderValue::from_str(version_id.as_ref())?,
-            );
-        }
-
-        let request = sign_request(
-            request,
-            &access_key.as_ref(),
-            &signing_key,
-            region.clone(),
-            &HEADERS,
-        )?;
+                &self.if_unmodified_since.map(|since| since.to_gmt()),
+            )?
+            .option_header(Headers::RANGE, &self.range)?
+            .option_header(Headers::VERSION_ID, &self.version_id)?
+            .header(
+                Headers::X_AMZ_CONTENT_SHA256,
+                HeaderValue::from_str(&payload_hash)?,
+            )
+            .header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?)
+            .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
         println!("{:#?}", request);
 
