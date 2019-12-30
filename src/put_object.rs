@@ -40,16 +40,16 @@ pub const HEADERS: [&'static str; 5] = [
 
 pub struct PutObject<T: AsRef<str>> {
     pub bucket: T,
-    pub name: T,
+    pub key: T,
     pub contents: Vec<u8>,
     pub expires: Option<DateTime<Utc>>,
 }
 
 impl<T: AsRef<str>> PutObject<T> {
-    pub fn new(bucket: T, name: T, contents: Vec<u8>) -> Self {
+    pub fn new(bucket: T, key: T, contents: Vec<u8>) -> Self {
         PutObject {
             bucket,
-            name,
+            key,
             contents,
             expires: None,
         }
@@ -83,7 +83,7 @@ impl<T: AsRef<str>> AwsRequest for PutObject<T> {
 
         let request = Request::builder()
             .method(Method::PUT)
-            .host(uri.clone(), self.bucket, self.name)?
+            .host(uri.clone(), self.bucket, self.key)?
             .option_header(Headers::EXPIRES, &self.expires.map(|since| since.to_gmt()))?
             .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?)
             .header(

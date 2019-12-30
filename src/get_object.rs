@@ -52,7 +52,7 @@ pub const HEADERS: [&'static str; 20] = [
 
 pub struct GetObject<T: AsRef<str>> {
     pub bucket: T,
-    pub name: T,
+    pub key: T,
     pub if_match: Option<T>,
     pub if_modified_since: Option<DateTime<Utc>>,
     pub if_none_match: Option<T>,
@@ -73,10 +73,10 @@ pub struct GetObject<T: AsRef<str>> {
 }
 
 impl<T: AsRef<str>> GetObject<T> {
-    pub fn new(bucket: T, name: T) -> Self {
+    pub fn new(bucket: T, key: T) -> Self {
         GetObject {
             bucket,
-            name,
+            key,
             if_match: None,
             if_modified_since: None,
             if_none_match: None,
@@ -155,7 +155,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T> {
 
         let request = Request::builder()
             .method(Method::GET)
-            .host(uri.clone(), self.bucket, self.name)?
+            .host(uri.clone(), self.bucket, self.key)?
             .option_header(Headers::IF_MATCH, &self.if_match)?
             .option_header(
                 Headers::IF_MODIFIED_SINCE,
