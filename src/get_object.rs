@@ -1,11 +1,33 @@
-use crate::{sign_request, Error, Gmt, Headers, Region, S3Request, SigningKey, StorageClass};
-use chrono::{DateTime, Utc};
+use crate::{
+    sign_request,
+    AwsRequest,
+    AwsResponse,
+    Error,
+    Gmt,
+    Headers,
+    Region,
+    SigningKey,
+    StorageClass,
+};
+use chrono::{
+    DateTime,
+    Utc,
+};
 use futures_core::future::BoxFuture;
-use http::uri::{PathAndQuery, Uri};
+use http::uri::{
+    PathAndQuery,
+    Uri,
+};
 use http_body::Body;
-use hyper::{header::HeaderValue, Body as HttpBody, Method, Request, Response};
+use hyper::{
+    header::HeaderValue,
+    Body as HttpBody,
+    Method,
+    Request,
+    Response,
+    StatusCode,
+};
 use std::convert::TryFrom;
-use std::str::FromStr;
 
 pub const HEADERS: [&'static str; 20] = [
     Headers::HOST,
@@ -114,8 +136,8 @@ impl GetObjectResponse {
     }
 }
 
-impl<T: AsRef<str>> S3Request for GetObject<T> {
-    type Response = GetObjectResponse;
+impl<T: AsRef<str>> AwsRequest for GetObject<T> {
+    type Response = Option<GetObjectResponse>;
 
     fn into_request<AR: AsRef<str>>(
         self,
@@ -220,51 +242,18 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
         mut response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            let last_modified = response
-                .headers()
-                .get(Headers::LAST_MODIFIED)
-                .map(HeaderValue::to_str)
-                .transpose()?
-                .map(DateTime::from_gmt)
-                .transpose()?
-                .ok_or(Error::LastModifiedNotPresentOnGetResponse)?;
+            if response.status() == StatusCode::NOT_MODIFIED {
+                return Ok(None);
+            }
 
-            let etag: String = response
-                .headers()
-                .get(Headers::ETAG)
-                .ok_or(Error::NoEtagInRespoinse)?
-                .to_str()?
-                .to_owned();
+            response.error().await?;
 
-            let version_id: Option<String> = response
-                .headers()
-                .get(Headers::X_AMZ_VERSION_ID)
-                .map(HeaderValue::to_str)
-                .transpose()?
-                .map(str::to_owned);
-
-            let expires = response
-                .headers()
-                .get(Headers::EXPIRES)
-                .map(HeaderValue::to_str)
-                .transpose()?
-                .map(DateTime::from_gmt)
-                .transpose()?;
-
-            let storage_class: StorageClass =
-                if let Some(header) = response.headers().get(Headers::X_AMZ_STORAGE_CLASS) {
-                    StorageClass::from_str(header.to_str()?)?
-                } else {
-                    StorageClass::Standard
-                };
-
-            let parts_count: Option<u64> = response
-                .headers()
-                .get(Headers::PARTS_COUNT)
-                .map(HeaderValue::to_str)
-                .transpose()?
-                .map(u64::from_str)
-                .transpose()?;
+            let last_modified = response.last_modified()?;
+            let etag = response.etag()?;
+            let version_id = response.version_id()?;
+            let expires = response.expires()?;
+            let storage_class = response.storage_class()?;
+            let parts_count = response.parts_count()?;
 
             let mut bytes: Vec<u8> = Vec::new();
 
@@ -273,7 +262,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 bytes.extend_from_slice(&chunk);
             }
 
-            Ok(GetObjectResponse {
+            Ok(Some(GetObjectResponse {
                 last_modified,
                 etag,
                 version_id,
@@ -281,7 +270,7 @@ impl<T: AsRef<str>> S3Request for GetObject<T> {
                 expires,
                 parts_count,
                 body: bytes,
-            })
+            }))
         })
     }
 }

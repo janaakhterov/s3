@@ -1,6 +1,12 @@
 use crate::region::Region;
-use chrono::{DateTime, Utc};
-use ring::hmac::{self, Key};
+use chrono::{
+    DateTime,
+    Utc,
+};
+use ring::hmac::{
+    self,
+    Key,
+};
 
 #[derive(Debug)]
 pub struct SigningKey {

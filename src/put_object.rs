@@ -1,13 +1,35 @@
-use crate::{sign_request, Error, Gmt, Headers, Region, S3Request, SigningKey};
-use chrono::{DateTime, Utc};
+use crate::{
+    sign_request,
+    AwsRequest,
+    AwsResponse,
+    Error,
+    Gmt,
+    Headers,
+    Region,
+    SigningKey,
+};
+use chrono::{
+    DateTime,
+    Utc,
+};
 use futures_core::future::BoxFuture;
 use http::{
     header::HeaderValue,
     method::Method,
-    uri::{PathAndQuery, Uri},
+    uri::{
+        PathAndQuery,
+        Uri,
+    },
 };
-use hyper::{Body as HttpBody, Request, Response};
-use sha2::{Digest, Sha256};
+use hyper::{
+    Body as HttpBody,
+    Request,
+    Response,
+};
+use sha2::{
+    Digest,
+    Sha256,
+};
 use std::convert::TryFrom;
 
 pub const HEADERS: [&'static str; 5] = [
@@ -41,7 +63,7 @@ impl<T: AsRef<str>> PutObject<T> {
     }
 }
 
-impl<T: AsRef<str>> S3Request for PutObject<T> {
+impl<T: AsRef<str>> AwsRequest for PutObject<T> {
     type Response = String;
 
     fn into_request<AR: AsRef<str>>(
@@ -110,15 +132,12 @@ impl<T: AsRef<str>> S3Request for PutObject<T> {
     }
 
     fn into_response(
-        response: Response<HttpBody>,
+        mut response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            let etag: String = response
-                .headers()
-                .get(Headers::ETAG)
-                .ok_or(Error::NoEtagInRespoinse)?
-                .to_str()?
-                .to_owned();
+            response.error().await?;
+
+            let etag = response.etag()?;
 
             Ok(etag)
         })

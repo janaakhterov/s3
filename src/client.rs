@@ -1,12 +1,19 @@
-use crate::{error::ResponseError, Error};
 use crate::{
-    get_object::{GetObject, GetObjectResponse},
+    get_object::{
+        GetObject,
+        GetObjectResponse,
+    },
     put_object::PutObject,
-    Region, S3Request, SigningKey,
+    AwsRequest,
+    Error,
+    Region,
+    SigningKey,
 };
-use chrono::{DateTime, Utc};
+use chrono::{
+    DateTime,
+    Utc,
+};
 use http::Uri;
-use http_body::Body;
 use hyper::Body as HttpBody;
 use std::convert::TryFrom;
 
@@ -106,7 +113,7 @@ impl Client {
         &self,
         bucket: T,
         key: T,
-    ) -> Result<GetObjectResponse, Error> {
+    ) -> Result<Option<GetObjectResponse>, Error> {
         let request = GetObject::new(bucket, key);
         self.send(request).await
     }
@@ -121,7 +128,7 @@ impl Client {
         self.send(request).await
     }
 
-    pub async fn send<T: S3Request>(&self, request: T) -> Result<T::Response, Error> {
+    pub async fn send<T: AwsRequest>(&self, request: T) -> Result<T::Response, Error> {
         let request = request.into_request(
             self.host.clone(),
             &self.access_key,
@@ -129,26 +136,10 @@ impl Client {
             self.region.clone(),
         )?;
 
-        let mut response = self.client.request(request).await?;
+        let response = self.client.request(request).await?;
 
         println!("{:#?}", response);
 
-        if !response.status().is_success() {
-            let mut bytes: Vec<u8> = Vec::new();
-
-            while let Some(next) = response.data().await {
-                let chunk = next?;
-                bytes.extend_from_slice(&chunk);
-            }
-            let error = String::from_utf8_lossy(&bytes);
-            println!("{}", error);
-
-            let error: ResponseError = quick_xml::de::from_str(&error)?;
-            println!("{:#?}", error);
-
-            Err(Error::ResponseError(error))
-        } else {
-            T::into_response(response).await
-        }
+        T::into_response(response).await
     }
 }

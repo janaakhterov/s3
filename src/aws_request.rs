@@ -1,8 +1,16 @@
-use crate::{Error, Region, SigningKey};
+use crate::{
+    Error,
+    Region,
+    SigningKey,
+};
 use futures_core::future::BoxFuture;
-use hyper::{Body, Request, Uri};
+use hyper::{
+    Body,
+    Request,
+    Uri,
+};
 
-pub trait S3Request {
+pub trait AwsRequest {
     type Response;
 
     fn into_request<T: AsRef<str>>(

@@ -1,8 +1,16 @@
-use crate::{Error, Headers, Region, SigningKey};
+use crate::{
+    Error,
+    Headers,
+    Region,
+    SigningKey,
+};
 use chrono::NaiveDateTime;
 use http::request::Builder;
 use hyper::header::HeaderValue;
-use sha2::{Digest, Sha256};
+use sha2::{
+    Digest,
+    Sha256,
+};
 
 pub(crate) fn sign_request<T: AsRef<str>>(
     mut request: Builder,

@@ -1,7 +1,13 @@
 extern crate s3;
 
-use chrono::{offset::TimeZone, Utc};
-use s3::{Client, PutObject};
+use chrono::{
+    offset::TimeZone,
+    Utc,
+};
+use s3::{
+    Client,
+    PutObject,
+};
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
 static ACCESS_KEY: &'static str = "6KSUI28SEVTXB63GLSLU";

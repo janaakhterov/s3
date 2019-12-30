@@ -1,5 +1,9 @@
 use crate::Error;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{
+    DateTime,
+    NaiveDateTime,
+    Utc,
+};
 
 pub trait Gmt {
     fn to_gmt(&self) -> String;
