@@ -28,8 +28,8 @@ use std::marker::PhantomData;
 mod response;
 
 // pub(super) use optional::OptionalGetObject;
-pub(super) use response::GetObjectResponse;
 use response::FromGetObjectResponse;
+pub(super) use response::GetObjectResponse;
 
 pub(super) const HEADERS: [&'static str; 20] = [
     Headers::HOST,

@@ -17,10 +17,9 @@ use hyper::{
 use std::borrow::Cow;
 
 pub trait FromGetObjectResponse {
-    fn from_response(
-        response: Response<HttpBody>,
-    ) -> BoxFuture<'static, Result<Self, Error>>
-        where Self: Sized;
+    fn from_response(response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>>
+    where
+        Self: Sized;
 }
 
 #[derive(Debug)]
@@ -41,9 +40,7 @@ impl GetObjectResponse {
 }
 
 impl FromGetObjectResponse for GetObjectResponse {
-    fn from_response(
-        mut response: Response<HttpBody>,
-    ) -> BoxFuture<'static, Result<Self, Error>> {
+    fn from_response(mut response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>> {
         Box::pin(async move {
             response.error().await?;
 
@@ -75,15 +72,15 @@ impl FromGetObjectResponse for GetObjectResponse {
 }
 
 impl FromGetObjectResponse for Option<GetObjectResponse> {
-    fn from_response(
-        response: Response<HttpBody>,
-    ) -> BoxFuture<'static, Result<Self, Error>> {
+    fn from_response(response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>> {
         Box::pin(async move {
             if response.status() == StatusCode::NOT_MODIFIED {
                 return Ok(None);
             }
 
-            Ok(Some(<GetObjectResponse as FromGetObjectResponse>::from_response(response).await?))
+            Ok(Some(
+                <GetObjectResponse as FromGetObjectResponse>::from_response(response).await?,
+            ))
         })
     }
 }

@@ -42,6 +42,9 @@ pub enum Error {
     #[error("Failed to a number in header")]
     ParseIntError(#[from] std::num::ParseIntError),
 
+    #[error("Failed to parse a boolean in header")]
+    ParseBoolError(#[from] std::str::ParseBoolError),
+
     #[error("Invalid URI")]
     InvalidUri(#[from] http::uri::InvalidUri),
 
@@ -61,7 +64,7 @@ pub enum Error {
     HeadersNotSet,
 
     #[error("Aws Response did not have an etag header present")]
-    NoEtagInRespoinse,
+    NoEtagInResponse,
 
     #[error("Invalid uri parts")]
     InvalidUriParts(#[from] http::uri::InvalidUriParts),

@@ -26,6 +26,7 @@ pub trait AwsResponse {
     fn storage_class(&self) -> Result<StorageClass, Error>;
     fn parts_count(&self) -> Result<Option<u64>, Error>;
     fn error(&mut self) -> BoxFuture<Result<(), Error>>;
+    fn delete_marker(&mut self) -> Result<Option<bool>, Error>;
 }
 
 impl AwsResponse for Response<HttpBody> {
@@ -44,7 +45,7 @@ impl AwsResponse for Response<HttpBody> {
         Ok(self
             .headers()
             .get(Headers::ETAG)
-            .ok_or(Error::NoEtagInRespoinse)?
+            .ok_or(Error::NoEtagInResponse)?
             .to_str()?
             .to_owned())
     }
@@ -103,5 +104,15 @@ impl AwsResponse for Response<HttpBody> {
                 Ok(())
             }
         })
+    }
+
+    fn delete_marker(&mut self) -> Result<Option<bool>, Error> {
+        Ok(self
+            .headers()
+            .get(Headers::DELETE_MARKER)
+            .map(HeaderValue::to_str)
+            .transpose()?
+            .map(bool::from_str)
+            .transpose()?)
     }
 }

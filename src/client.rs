@@ -1,7 +1,12 @@
 use crate::{
+    delete_object::DeleteObject,
     get_object::{
         GetObject,
         GetObjectResponse,
+    },
+    list_buckets::{
+        Bucket,
+        ListBuckets,
     },
     put_object::PutObject,
     AwsRequest,
@@ -126,6 +131,15 @@ impl Client {
     ) -> Result<String, Error> {
         let request = PutObject::new(bucket, key, contents);
         self.send(request).await
+    }
+
+    pub async fn delete_object<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<bool, Error> {
+        let request = DeleteObject::new(bucket, key);
+        self.send(request).await
+    }
+
+    pub async fn list_buckets(&self) -> Result<Vec<Bucket>, Error> {
+        self.send(ListBuckets).await
     }
 
     pub async fn send<T: AwsRequest>(&self, request: T) -> Result<T::Response, Error> {

@@ -11,8 +11,13 @@ pub(crate) use crate::{
 
 pub use crate::{
     client::Client,
+    delete_object::DeleteObject,
     error::Error,
     get_object::GetObject,
+    list_buckets::{
+        Bucket,
+        ListBuckets,
+    },
     put_object::PutObject,
     region::Region,
     storage_class::StorageClass,
@@ -31,5 +36,7 @@ mod sign_request;
 mod signing_key;
 mod storage_class;
 
+mod delete_object;
 mod get_object;
+mod list_buckets;
 mod put_object;
