@@ -12,8 +12,16 @@ use http_body::Body;
 use hyper::{
     body::Body as HttpBody,
     Response,
+    StatusCode,
 };
 use std::borrow::Cow;
+
+pub trait FromGetObjectResponse {
+    fn from_response(
+        response: Response<HttpBody>,
+    ) -> BoxFuture<'static, Result<Self, Error>>
+        where Self: Sized;
+}
 
 #[derive(Debug)]
 pub struct GetObjectResponse {
@@ -30,8 +38,10 @@ impl GetObjectResponse {
     pub fn as_str(&self) -> Cow<str> {
         String::from_utf8_lossy(&self.body)
     }
+}
 
-    pub(super) fn from_response(
+impl FromGetObjectResponse for GetObjectResponse {
+    fn from_response(
         mut response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self, Error>> {
         Box::pin(async move {
@@ -51,7 +61,7 @@ impl GetObjectResponse {
                 bytes.extend_from_slice(&chunk);
             }
 
-            Ok(Self {
+            Ok(GetObjectResponse {
                 last_modified,
                 etag,
                 version_id,
@@ -60,6 +70,20 @@ impl GetObjectResponse {
                 parts_count,
                 body: bytes,
             })
+        })
+    }
+}
+
+impl FromGetObjectResponse for Option<GetObjectResponse> {
+    fn from_response(
+        response: Response<HttpBody>,
+    ) -> BoxFuture<'static, Result<Self, Error>> {
+        Box::pin(async move {
+            if response.status() == StatusCode::NOT_MODIFIED {
+                return Ok(None);
+            }
+
+            Ok(Some(<GetObjectResponse as FromGetObjectResponse>::from_response(response).await?))
         })
     }
 }

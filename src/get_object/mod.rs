@@ -1,6 +1,7 @@
 use crate::{
     AwsRequest,
     Error,
+    Gmt,
     Headers,
     Host,
     OptionHeader,
@@ -21,12 +22,14 @@ use hyper::{
     Request,
     Response,
 };
+use std::marker::PhantomData;
 
-mod optional;
+// mod optional;
 mod response;
 
-pub(super) use optional::OptionalGetObject;
+// pub(super) use optional::OptionalGetObject;
 pub(super) use response::GetObjectResponse;
+use response::FromGetObjectResponse;
 
 pub(super) const HEADERS: [&'static str; 20] = [
     Headers::HOST,
@@ -51,11 +54,16 @@ pub(super) const HEADERS: [&'static str; 20] = [
     Headers::X_AMZ_DATE,
 ];
 
-pub struct GetObject<T: AsRef<str>> {
-    pub(super) bucket: T,
-    pub(super) key: T,
-    pub(super) range: Option<String>,
-    pub(super) version_id: Option<T>,
+pub struct GetObject<T: AsRef<str>, R: FromGetObjectResponse> {
+    pub bucket: T,
+    pub key: T,
+    pub if_match: Option<T>,
+    pub if_modified_since: Option<DateTime<Utc>>,
+    pub if_none_match: Option<T>,
+    pub if_unmodified_since: Option<DateTime<Utc>>,
+    pub range: Option<String>,
+    pub version_id: Option<T>,
+    pub _phantom: PhantomData<R>,
 }
 
 // TODO:
@@ -71,34 +79,81 @@ pub struct GetObject<T: AsRef<str>> {
 // pub sse_customer_key: Option<T>,
 // pub sse_customer_key_md5: Option<T>,
 
-impl<T: AsRef<str>> GetObject<T> {
-    pub fn new(bucket: T, key: T) -> Self {
+impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
+    pub fn new(bucket: T, key: T) -> GetObject<T, GetObjectResponse> {
         GetObject {
             bucket,
             key,
+            if_match: None,
+            if_modified_since: None,
+            if_none_match: None,
+            if_unmodified_since: None,
             range: None,
             version_id: None,
+            _phantom: PhantomData,
         }
     }
 
-    pub fn if_match(self, etag: T) -> OptionalGetObject<T> {
-        let optional = OptionalGetObject::from(self);
-        optional.if_match(etag)
+    pub fn if_match(self, etag: T) -> GetObject<T, Option<GetObjectResponse>> {
+        GetObject {
+            bucket: self.bucket,
+            key: self.key,
+            if_match: Some(etag),
+            if_modified_since: self.if_modified_since,
+            if_none_match: self.if_none_match,
+            if_unmodified_since: self.if_unmodified_since,
+            range: self.range,
+            version_id: self.version_id,
+            _phantom: PhantomData,
+        }
     }
 
-    pub fn if_modified_since(self, since: DateTime<Utc>) -> OptionalGetObject<T> {
-        let optional = OptionalGetObject::from(self);
-        optional.if_modified_since(since)
+    pub fn if_modified_since(
+        self,
+        since: DateTime<Utc>,
+    ) -> GetObject<T, Option<GetObjectResponse>> {
+        GetObject {
+            bucket: self.bucket,
+            key: self.key,
+            if_match: self.if_match,
+            if_modified_since: Some(since),
+            if_none_match: self.if_none_match,
+            if_unmodified_since: self.if_unmodified_since,
+            range: self.range,
+            version_id: self.version_id,
+            _phantom: PhantomData,
+        }
     }
 
-    pub fn if_none_match(self, etag: T) -> OptionalGetObject<T> {
-        let optional = OptionalGetObject::from(self);
-        optional.if_none_match(etag)
+    pub fn if_none_match(self, etag: T) -> GetObject<T, Option<GetObjectResponse>> {
+        GetObject {
+            bucket: self.bucket,
+            key: self.key,
+            if_match: self.if_match,
+            if_modified_since: self.if_modified_since,
+            if_none_match: Some(etag),
+            if_unmodified_since: self.if_unmodified_since,
+            range: self.range,
+            version_id: self.version_id,
+            _phantom: PhantomData,
+        }
     }
 
-    pub fn if_unmodified_since(self, since: DateTime<Utc>) -> OptionalGetObject<T> {
-        let optional = OptionalGetObject::from(self);
-        optional.if_unmodified_since(since)
+    pub fn if_unmodified_since(
+        self,
+        since: DateTime<Utc>,
+    ) -> GetObject<T, Option<GetObjectResponse>> {
+        GetObject {
+            bucket: self.bucket,
+            key: self.key,
+            if_match: self.if_match,
+            if_modified_since: self.if_modified_since,
+            if_none_match: self.if_none_match,
+            if_unmodified_since: Some(since),
+            range: self.range,
+            version_id: self.version_id,
+            _phantom: PhantomData,
+        }
     }
 
     pub fn range(mut self, start: u64, end: u64) -> Self {
@@ -112,7 +167,7 @@ impl<T: AsRef<str>> GetObject<T> {
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for GetObject<T> {
+impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
     type Response = GetObjectResponse;
 
     fn into_request<AR: AsRef<str>>(
@@ -134,6 +189,16 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T> {
         let request = Request::builder()
             .method(Method::GET)
             .host(uri.clone(), self.bucket, self.key)?
+            .option_header(Headers::IF_MATCH, &self.if_match)?
+            .option_header(
+                Headers::IF_MODIFIED_SINCE,
+                &self.if_modified_since.map(|since| since.to_gmt()),
+            )?
+            .option_header(Headers::IF_NONE_MATCH, &self.if_none_match)?
+            .option_header(
+                Headers::IF_UNMODIFIED_SINCE,
+                &self.if_unmodified_since.map(|since| since.to_gmt()),
+            )?
             .option_header(Headers::RANGE, &self.range)?
             .option_header(Headers::VERSION_ID, &self.version_id)?
             .header(
@@ -152,5 +217,41 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T> {
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         GetObjectResponse::from_response(response)
+    }
+}
+
+impl<T: AsRef<str>> AwsRequest for GetObject<T, Option<GetObjectResponse>> {
+    type Response = Option<GetObjectResponse>;
+
+    fn into_request<AR: AsRef<str>>(
+        self,
+        uri: Uri,
+        access_key: AR,
+        signing_key: &SigningKey,
+        region: Region,
+    ) -> Result<Request<HttpBody>, Error> {
+        <GetObject<T, GetObjectResponse> as AwsRequest>::into_request(
+            GetObject {
+                bucket: self.bucket,
+                key: self.key,
+                if_match: self.if_match,
+                if_modified_since: self.if_modified_since,
+                if_none_match: self.if_none_match,
+                if_unmodified_since: self.if_unmodified_since,
+                range: self.range,
+                version_id: self.version_id,
+                _phantom: PhantomData,
+            },
+            uri,
+            access_key,
+            signing_key,
+            region,
+        )
+    }
+
+    fn into_response(
+        response: Response<HttpBody>,
+    ) -> BoxFuture<'static, Result<Self::Response, Error>> {
+        Self::Response::from_response(response)
     }
 }
