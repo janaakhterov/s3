@@ -113,7 +113,7 @@ impl Client {
         &self,
         bucket: T,
         key: T,
-    ) -> Result<Option<GetObjectResponse>, Error> {
+    ) -> Result<GetObjectResponse, Error> {
         let request = GetObject::new(bucket, key);
         self.send(request).await
     }
