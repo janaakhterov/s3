@@ -4,7 +4,7 @@ use crate::{
     Gmt,
     Headers,
     Host,
-    OptionHeader,
+    OptionalHeader,
     Region,
     SignRequest,
     SigningKey,
@@ -189,18 +189,18 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
         let request = Request::builder()
             .method(Method::GET)
             .host(uri.clone(), self.bucket, self.key)?
-            .option_header(Headers::IF_MATCH, &self.if_match)?
-            .option_header(
+            .optional_header(Headers::IF_MATCH, &self.if_match)?
+            .optional_header(
                 Headers::IF_MODIFIED_SINCE,
                 &self.if_modified_since.map(|since| since.to_gmt()),
             )?
-            .option_header(Headers::IF_NONE_MATCH, &self.if_none_match)?
-            .option_header(
+            .optional_header(Headers::IF_NONE_MATCH, &self.if_none_match)?
+            .optional_header(
                 Headers::IF_UNMODIFIED_SINCE,
                 &self.if_unmodified_since.map(|since| since.to_gmt()),
             )?
-            .option_header(Headers::RANGE, &self.range)?
-            .option_header(Headers::VERSION_ID, &self.version_id)?
+            .optional_header(Headers::RANGE, &self.range)?
+            .optional_header(Headers::VERSION_ID, &self.version_id)?
             .header(
                 Headers::X_AMZ_CONTENT_SHA256,
                 HeaderValue::from_str(&payload_hash)?,

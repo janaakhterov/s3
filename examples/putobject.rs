@@ -29,7 +29,8 @@ async fn main() -> Result<(), anyhow::Error> {
                 "putobject_example_file",
                 "random bytes".as_bytes().to_vec(),
             )
-            .expires(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0)),
+            .expires(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0))
+            .grant_read_email("example@gmail.com"),
         )
         .await?;
 

@@ -2,18 +2,25 @@ pub(crate) use crate::{
     aws_request::AwsRequest,
     aws_response::AwsResponse,
     gmt::Gmt,
+    grant::OptionalGrants,
     headers::Headers,
     host::Host,
-    option_header::OptionHeader,
+    optional_header::OptionalHeader,
     sign_request::SignRequest,
     signing_key::SigningKey,
 };
 
 pub use crate::{
+    acl::Acl,
+    cache::CacheControl,
     client::Client,
     delete_object::DeleteObject,
     error::Error,
     get_object::GetObject,
+    grant::{
+        GrantType,
+        GrantValue,
+    },
     list_buckets::{
         Bucket,
         ListBuckets,
@@ -23,14 +30,17 @@ pub use crate::{
     storage_class::StorageClass,
 };
 
+mod acl;
 mod aws_request;
 mod aws_response;
+mod cache;
 mod client;
 mod error;
 mod gmt;
+mod grant;
 mod headers;
 mod host;
-mod option_header;
+mod optional_header;
 mod region;
 mod sign_request;
 mod signing_key;

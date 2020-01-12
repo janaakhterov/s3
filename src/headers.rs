@@ -2,6 +2,7 @@ pub struct Headers;
 
 impl Headers {
     pub const AUTHORIZATION: &'static str = "authorization";
+    pub const CACHE_CONTROL: &'static str = "cache-control";
     pub const CONTENT_MD5: &'static str = "content-md5";
     pub const DELETE_MARKER: &'static str = "x-amz-delete-marker";
     pub const ETAG: &'static str = "etag";
@@ -26,8 +27,14 @@ impl Headers {
     pub const SSE_CUSTOMER_KEY: &'static str = "sse-customer-key";
     pub const SSE_CUSTOMER_KEY_MD5: &'static str = "sse-customer-key-md5";
     pub const VERSION_ID: &'static str = "vesrion-id";
+    pub const X_AMZ_ACL: &'static str = "x-amz-acl";
     pub const X_AMZ_CONTENT_SHA256: &'static str = "x-amz-content-sha256";
     pub const X_AMZ_DATE: &'static str = "x-amz-date";
     pub const X_AMZ_STORAGE_CLASS: &'static str = "x-amz-storage-class";
     pub const X_AMZ_VERSION_ID: &'static str = "x-amz-version-id";
+    pub const X_AMZ_GRANT_WRITE: &'static str = "x-amz-grant-write";
+    pub const X_AMZ_GRANT_READ: &'static str = "x-amz-grant-read";
+    pub const X_AMZ_GRANT_WRITE_ACP: &'static str = "x-amz-grant-write-acp";
+    pub const X_AMZ_GRANT_READ_ACP: &'static str = "x-amz-grant-read-acp";
+    pub const X_AMZ_GRANT_FULL_CONTROL: &'static str = "x-amz-grant-full-control";
 }

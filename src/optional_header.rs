@@ -8,8 +8,8 @@ use http::{
 };
 use std::convert::TryFrom;
 
-pub trait OptionHeader {
-    fn option_header<K, V>(self, key: K, value: &Option<V>) -> Result<Self, Error>
+pub trait OptionalHeader {
+    fn optional_header<K, V>(self, key: K, value: &Option<V>) -> Result<Self, Error>
     where
         HeaderName: TryFrom<K>,
         <HeaderName as TryFrom<K>>::Error: Into<Error>,
@@ -17,8 +17,8 @@ pub trait OptionHeader {
         Self: Sized;
 }
 
-impl OptionHeader for Builder {
-    fn option_header<K, V>(self, key: K, value: &Option<V>) -> Result<Self, Error>
+impl OptionalHeader for Builder {
+    fn optional_header<K, V>(self, key: K, value: &Option<V>) -> Result<Self, Error>
     where
         HeaderName: TryFrom<K>,
         <HeaderName as TryFrom<K>>::Error: Into<Error>,

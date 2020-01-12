@@ -114,7 +114,7 @@ impl Client {
         ClientBuilder::new()
     }
 
-    pub async fn get_object<T: AsRef<str>>(
+    pub async fn get<T: AsRef<str>>(
         &self,
         bucket: T,
         key: T,
@@ -123,7 +123,7 @@ impl Client {
         self.send(request).await
     }
 
-    pub async fn put_object<T: AsRef<str>>(
+    pub async fn put<T: AsRef<str>>(
         &self,
         bucket: T,
         key: T,
@@ -133,7 +133,7 @@ impl Client {
         self.send(request).await
     }
 
-    pub async fn delete_object<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<bool, Error> {
+    pub async fn delete<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<bool, Error> {
         let request = DeleteObject::new(bucket, key);
         self.send(request).await
     }
