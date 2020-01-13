@@ -5,7 +5,7 @@ use chrono::{
     Utc,
 };
 use s3::{
-    Client,
+    client::Client,
     PutObject,
 };
 

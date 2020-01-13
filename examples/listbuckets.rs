@@ -1,6 +1,6 @@
 extern crate s3;
 
-use s3::Client;
+use s3::client::Client;
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
 static ACCESS_KEY: &'static str = "6KSUI28SEVTXB63GLSLU";

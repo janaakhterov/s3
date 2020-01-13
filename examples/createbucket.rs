@@ -1,7 +1,7 @@
 extern crate s3;
 
 use s3::{
-    Client,
+    client::Client,
     CreateBucket,
     Region,
 };
