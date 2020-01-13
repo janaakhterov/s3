@@ -19,8 +19,14 @@ use chrono::{
 use http::Uri;
 use hyper::Body as HttpBody;
 use std::convert::TryFrom;
+use std::path::Path;
 
 mod builder;
+
+static AWS_ACCESS_KEY: &str = "AWS_ACCESS_KEY";
+static AWS_SECRET_KEY: &str = "AWS_SECRET_KEY";
+static AWS_SHARED_CREDENTIALS_FILE_ENV: &str = "AWS_SHARED_CREDENTIALS_FILE";
+static AWS_SHARED_CREDENTIALS_FILE: &str = "~/.aws/credentials";
 
 #[derive(Debug)]
 pub struct Client {
@@ -35,11 +41,11 @@ pub struct Client {
 impl Client {
     /// Create a new Client with the given parameters
     /// **NOTE:** The secret key is not stored in memory after this call.
-    pub fn new<T: AsRef<str>>(
-        access_key: T,
-        secret_key: T,
+    pub fn new<T1: AsRef<str>, T2: AsRef<str>>(
+        access_key: T1,
+        secret_key: T1,
         region: Region,
-        host: T,
+        host: T2,
     ) -> Result<Self, Error> {
         let date = Utc::now();
         Ok(Self {
@@ -50,6 +56,29 @@ impl Client {
             host: Uri::try_from(host.as_ref())?,
             access_key: access_key.as_ref().to_owned(),
         })
+    }
+
+    /// A helper method for constructing a Client from either environment variables
+    /// or from a file. The environment variable `AWS_SHARED_CREDENTIALS_FILE` is used
+    /// to determine the file, otherwise `~/.aws/credentials` is used.
+    pub fn load<T: AsRef<str>>(host: T) -> Result<Self, Error> {
+        let access_key = std::env::var(AWS_ACCESS_KEY);
+        let secret_key = std::env::var(AWS_SECRET_KEY);
+
+        if let (Ok(access_key), Ok(secret_key)) = (access_key, secret_key) {
+            return Client::new(access_key, secret_key, Region::UsEast1, host)
+        }
+
+        let file_name = if let Ok(file_name) = std::env::var(AWS_SHARED_CREDENTIALS_FILE_ENV) {
+            file_name
+        } else {
+            AWS_SHARED_CREDENTIALS_FILE.to_owned()
+        };
+
+        let path = Path::new(&file_name);
+        let _contents = std::fs::read_to_string(&path);
+
+        unimplemented!()
     }
 
     /// Helper method to construct a new builder
