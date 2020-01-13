@@ -8,14 +8,13 @@ use http::{
     Error,
 };
 
-pub enum GrantValue {
+pub(crate) enum GrantValue {
     Email,
     Id,
     Uri,
 }
 
-pub enum GrantType {
-    Write,
+pub(crate) enum GrantType {
     Read,
     WriteAcp,
     ReadAcp,
@@ -23,7 +22,6 @@ pub enum GrantType {
 }
 
 pub(crate) struct Grants {
-    pub(crate) write: Option<String>,
     pub(crate) read: Option<String>,
     pub(crate) write_acp: Option<String>,
     pub(crate) read_acp: Option<String>,
@@ -46,7 +44,6 @@ pub(crate) trait IntoGrants {
 
 impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
     fn into(self) -> Grants {
-        let mut write = Vec::new();
         let mut read = Vec::new();
         let mut write_acp = Vec::new();
         let mut read_acp = Vec::new();
@@ -57,7 +54,6 @@ impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
             let value = format!(r#"{}="{}""#, value_type, value.as_ref());
 
             match grant_type {
-                GrantType::Write => write.push(value),
                 GrantType::Read => read.push(value),
                 GrantType::WriteAcp => write_acp.push(value),
                 GrantType::ReadAcp => read_acp.push(value),
@@ -65,38 +61,31 @@ impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
             }
         }
 
-        let write = if write.len() > 0 {
-            Some(write.join(", "))
-        } else {
-            None
-        };
-
-        let read = if read.len() > 0 {
+        let read = if !read.is_empty() {
             Some(read.join(", "))
         } else {
             None
         };
 
-        let write_acp = if write_acp.len() > 0 {
+        let write_acp = if !write_acp.is_empty() {
             Some(write_acp.join(", "))
         } else {
             None
         };
 
-        let read_acp = if read_acp.len() > 0 {
+        let read_acp = if !read_acp.is_empty() {
             Some(read_acp.join(", "))
         } else {
             None
         };
 
-        let full_control = if full_control.len() > 0 {
+        let full_control = if !full_control.is_empty() {
             Some(full_control.join(", "))
         } else {
             None
         };
 
         Grants {
-            write,
             read,
             write_acp,
             read_acp,
@@ -105,7 +94,7 @@ impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
     }
 }
 
-pub trait OptionalGrants {
+pub(crate) trait OptionalGrants {
     fn optional_grants<T: AsRef<str>>(
         self,
         acl: Option<Acl>,
@@ -124,13 +113,12 @@ impl OptionalGrants for Builder {
     where
         Self: Sized,
     {
-        if let (Some(acl), true) = (acl, grants.len() == 0) {
+        if let (Some(acl), true) = (acl, grants.is_empty()) {
             let acl: &'static str = acl.into();
             self.optional_header(Headers::X_AMZ_ACL, &Some(acl))
         } else {
             let grants: Grants = grants.into();
-            self.optional_header(Headers::X_AMZ_GRANT_WRITE, &grants.write)?
-                .optional_header(Headers::X_AMZ_GRANT_READ, &grants.read)?
+            self.optional_header(Headers::X_AMZ_GRANT_READ, &grants.read)?
                 .optional_header(Headers::X_AMZ_GRANT_WRITE_ACP, &grants.write_acp)?
                 .optional_header(Headers::X_AMZ_GRANT_READ_ACP, &grants.read_acp)?
                 .optional_header(Headers::X_AMZ_GRANT_FULL_CONTROL, &grants.full_control)

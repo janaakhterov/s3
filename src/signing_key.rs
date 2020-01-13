@@ -36,11 +36,8 @@ impl SigningKey {
             &Key::new(hmac::HMAC_SHA256, tag.as_ref()),
             region.as_bytes(),
         );
-        let tag = hmac::sign(&Key::new(hmac::HMAC_SHA256, tag.as_ref()), "s3".as_bytes());
-        let tag = hmac::sign(
-            &Key::new(hmac::HMAC_SHA256, tag.as_ref()),
-            "aws4_request".as_bytes(),
-        );
+        let tag = hmac::sign(&Key::new(hmac::HMAC_SHA256, tag.as_ref()), b"s3");
+        let tag = hmac::sign(&Key::new(hmac::HMAC_SHA256, tag.as_ref()), b"aws4_request");
         Key::new(hmac::HMAC_SHA256, tag.as_ref())
     }
 

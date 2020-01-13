@@ -14,9 +14,13 @@ use hyper::{
     Response,
     StatusCode,
 };
-use std::borrow::Cow;
-use std::ops::Deref;
-use std::ops::DerefMut;
+use std::{
+    borrow::Cow,
+    ops::{
+        Deref,
+        DerefMut,
+    },
+};
 
 pub trait FromGetObjectResponse {
     fn from_response(response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>>

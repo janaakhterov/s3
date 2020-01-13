@@ -18,8 +18,7 @@ pub trait PayloadHash {
 }
 
 // Hash of empty body
-const NO_PAYLOAD_HASH: &'static str =
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+const NO_PAYLOAD_HASH: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
 impl PayloadHash for Builder {
     fn payload_hash(self, bytes: Option<&[u8]>) -> Result<Self, Error> {

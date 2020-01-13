@@ -2,7 +2,11 @@ pub(crate) use crate::{
     aws_request::AwsRequest,
     aws_response::AwsResponse,
     gmt::Gmt,
-    grant::OptionalGrants,
+    grant::{
+        GrantType,
+        GrantValue,
+        OptionalGrants,
+    },
     headers::Headers,
     host::Host,
     optional_header::OptionalHeader,
@@ -14,20 +18,12 @@ pub(crate) use crate::{
 pub use crate::{
     acl::Acl,
     cache::CacheControl,
-    client::Client,
     create_bucket::CreateBucket,
     delete_bucket::DeleteBucket,
     delete_object::DeleteObject,
     error::Error,
     get_object::GetObject,
-    grant::{
-        GrantType,
-        GrantValue,
-    },
-    list_buckets::{
-        Bucket,
-        ListBuckets,
-    },
+    list_buckets::ListBuckets,
     put_object::PutObject,
     region::Region,
     storage_class::StorageClass,
@@ -37,7 +33,6 @@ mod acl;
 mod aws_request;
 mod aws_response;
 mod cache;
-mod client;
 mod error;
 mod gmt;
 mod grant;
@@ -56,3 +51,5 @@ mod delete_object;
 mod get_object;
 mod list_buckets;
 mod put_object;
+
+pub mod client;

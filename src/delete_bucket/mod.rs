@@ -1,10 +1,10 @@
 use crate::{
-    Host,
-    PayloadHash,
     AwsRequest,
     AwsResponse,
     Error,
     Headers,
+    Host,
+    PayloadHash,
     Region,
     SignRequest,
     SigningKey,
@@ -20,7 +20,10 @@ use hyper::{
     Response,
 };
 
-const HEADERS: [&'static str; 9] = [
+// DeleteBucket request Headers, this list *MUST* be in
+// sorted order as it is used in the signing process
+// of each request.
+const HEADERS: [&str; 9] = [
     Headers::HOST,
     Headers::X_AMZ_ACL,
     Headers::X_AMZ_CONTENT_SHA256,
@@ -33,15 +36,16 @@ const HEADERS: [&'static str; 9] = [
 ];
 
 pub struct DeleteBucket<T: AsRef<str>> {
+    /// The bucket to delete.
     bucket: T,
 }
 
 impl<T: AsRef<str>> DeleteBucket<T> {
+    /// Create a new DeleteBucket request with the given bucket name.
     pub fn new(bucket: T) -> Self {
         DeleteBucket { bucket }
     }
 }
-
 
 impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
     type Response = ();
@@ -55,11 +59,9 @@ impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
             .method(Method::PUT)
-            .host(uri.clone(), self.bucket, "")?
+            .host(uri, self.bucket, "")?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
-
-        println!("{:#?}", request);
 
         Ok(request.body(HttpBody::empty())?)
     }

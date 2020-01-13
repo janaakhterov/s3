@@ -29,7 +29,10 @@ mod response;
 use response::FromGetObjectResponse;
 pub(super) use response::GetObjectResponse;
 
-pub(super) const HEADERS: [&'static str; 20] = [
+// GetObject request Headers, this list *MUST* be in
+// sorted order as it is used in the signing process
+// of each request.
+pub(super) const HEADERS: [&str; 20] = [
     Headers::HOST,
     Headers::IF_MATCH,
     Headers::IF_MODIFIED_SINCE,
@@ -52,16 +55,22 @@ pub(super) const HEADERS: [&'static str; 20] = [
     Headers::X_AMZ_DATE,
 ];
 
+// Reason for `R: FromGetObjectResponse` is because the response
+// of the get request will become optional if any of the `if_*`
+// options are set. Otherwise, the request will always return a
+// value or an error.
 pub struct GetObject<T: AsRef<str>, R: FromGetObjectResponse> {
+    /// The bucket name containing the object.
     pub bucket: T,
+    /// Key of the object to get.
     pub key: T,
-    pub if_match: Option<T>,
-    pub if_modified_since: Option<DateTime<Utc>>,
-    pub if_none_match: Option<T>,
-    pub if_unmodified_since: Option<DateTime<Utc>>,
-    pub range: Option<String>,
-    pub version_id: Option<T>,
-    pub _phantom: PhantomData<R>,
+    if_match: Option<T>,
+    if_modified_since: Option<DateTime<Utc>>,
+    if_none_match: Option<T>,
+    if_unmodified_since: Option<DateTime<Utc>>,
+    range: Option<String>,
+    version_id: Option<T>,
+    _phantom: PhantomData<R>,
 }
 
 // TODO:
@@ -78,6 +87,8 @@ pub struct GetObject<T: AsRef<str>, R: FromGetObjectResponse> {
 // pub sse_customer_key_md5: Option<T>,
 
 impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
+    /// Create a new GetObject request with default parameters and non-optional
+    /// response type.
     pub fn new(bucket: T, key: T) -> GetObject<T, GetObjectResponse> {
         GetObject {
             bucket,
@@ -92,6 +103,8 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
         }
     }
 
+    /// Return the object only if its entity tag (ETag) is the same as the one specified, otherwise return a 412 (precondition failed).
+    /// **Note:** This changes the response type of from `GetObjectResponse` to `Option<GetObjectResponse>`
     pub fn if_match(self, etag: T) -> GetObject<T, Option<GetObjectResponse>> {
         GetObject {
             bucket: self.bucket,
@@ -106,6 +119,8 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
         }
     }
 
+    /// Return the object only if it has been modified since the specified time, otherwise return a 304 (not modified).
+    /// **Note:** This changes the response type of from `GetObjectResponse` to `Option<GetObjectResponse>`
     pub fn if_modified_since(
         self,
         since: DateTime<Utc>,
@@ -123,6 +138,8 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
         }
     }
 
+    /// Return the object only if its entity tag (ETag) is different from the one specified, otherwise return a 304 (not modified).
+    /// **Note:** This changes the response type of from `GetObjectResponse` to `Option<GetObjectResponse>`
     pub fn if_none_match(self, etag: T) -> GetObject<T, Option<GetObjectResponse>> {
         GetObject {
             bucket: self.bucket,
@@ -137,6 +154,8 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
         }
     }
 
+    /// Return the object only if it has not been modified since the specified time, otherwise return a 412 (precondition failed).
+    /// **Note:** This changes the response type of from `GetObjectResponse` to `Option<GetObjectResponse>`
     pub fn if_unmodified_since(
         self,
         since: DateTime<Utc>,
@@ -154,11 +173,13 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
         }
     }
 
+    /// Downloads the specified range bytes of an object.
     pub fn range(mut self, start: u64, end: u64) -> Self {
         self.range = Some(format!("bytes={}-{}", start, end));
         self
     }
 
+    /// VersionId used to reference a specific version of the object.
     pub fn version_id(mut self, version_id: T) -> Self {
         self.version_id = Some(version_id);
         self
@@ -177,7 +198,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
             .method(Method::GET)
-            .host(uri.clone(), self.bucket, self.key)?
+            .host(uri, self.bucket, self.key)?
             .optional_header(Headers::IF_MATCH, &self.if_match)?
             .optional_header(
                 Headers::IF_MODIFIED_SINCE,
@@ -192,8 +213,6 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
             .optional_header(Headers::VERSION_ID, &self.version_id)?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
-
-        println!("{:#?}", request);
 
         Ok(request.body(HttpBody::empty())?)
     }

@@ -2,7 +2,6 @@ use crate::{
     Acl,
     AwsRequest,
     AwsResponse,
-    PayloadHash,
     CacheControl,
     Error,
     Gmt,
@@ -12,6 +11,7 @@ use crate::{
     Host,
     OptionalGrants,
     OptionalHeader,
+    PayloadHash,
     Region,
     SignRequest,
     SigningKey,
@@ -32,9 +32,10 @@ use hyper::{
     Response,
 };
 
-// This static variable must have all the headers
-// in sorted order
-const HEADERS: [&'static str; 11] = [
+// PutObject requset Headers, this list *MUST* be in
+// sorted order as it is used in the signing process
+// of each request.
+const HEADERS: [&str; 11] = [
     Headers::CONTENT_MD5,
     Headers::EXPIRES,
     Headers::HOST,
@@ -49,16 +50,21 @@ const HEADERS: [&'static str; 11] = [
 ];
 
 pub struct PutObject<T: AsRef<str>> {
+    /// Bucket name to which the PUT operation was initiated.
     pub bucket: T,
+
+    /// Object key for which the PUT operation was initiated.
     pub key: T,
-    pub contents: Vec<u8>,
-    pub expires: Option<DateTime<Utc>>,
-    pub grants: Vec<(GrantType, GrantValue, T)>,
-    pub cache: Option<CacheControl<T>>,
-    pub acl: Option<Acl>,
+
+    contents: Vec<u8>,
+    expires: Option<DateTime<Utc>>,
+    grants: Vec<(GrantType, GrantValue, T)>,
+    cache: Option<CacheControl<T>>,
+    acl: Option<Acl>,
 }
 
 impl<T: AsRef<str>> PutObject<T> {
+    /// Create a new PutObject request with default parameters
     pub fn new(bucket: T, key: T, contents: Vec<u8>) -> Self {
         PutObject {
             bucket,
@@ -71,83 +77,98 @@ impl<T: AsRef<str>> PutObject<T> {
         }
     }
 
+    /// The date and time at which the object is no longer cacheable.
     pub fn expires(mut self, expires: DateTime<Utc>) -> Self {
         self.expires = Some(expires);
         self
     }
 
+    /// Can be used to specify caching behavior along the request/reply chain.
     pub fn cache(mut self, cache: CacheControl<T>) -> Self {
         self.cache = Some(cache);
         self
     }
 
+    /// The canned ACL to apply to the object.
     /// Note: Granting explicit permission will overwrite this setting
     pub fn acl(mut self, acl: Acl) -> Self {
         self.acl = Some(acl);
         self
     }
 
+    /// Allows grantee email to read the object data and its metadata.
     pub fn grant_read_email(mut self, email: T) -> Self {
         self.grants
             .push((GrantType::Read, GrantValue::Email, email));
         self
     }
 
+    /// Allows grantee id to read the object data and its metadata.
     pub fn grant_read_id(mut self, id: T) -> Self {
         self.grants.push((GrantType::Read, GrantValue::Id, id));
         self
     }
 
+    /// Allows uri to read the object data and its metadata.
     pub fn grant_read_uri(mut self, uri: T) -> Self {
         self.grants.push((GrantType::Read, GrantValue::Uri, uri));
         self
     }
 
+    /// Allows grantee email to write the ACL for the applicable object.
     pub fn grant_write_acp_email(mut self, email: T) -> Self {
         self.grants
             .push((GrantType::WriteAcp, GrantValue::Email, email));
         self
     }
 
+    /// Allows grantee id to write the ACL for the applicable object.
     pub fn grant_write_acp_id(mut self, id: T) -> Self {
         self.grants.push((GrantType::WriteAcp, GrantValue::Id, id));
         self
     }
 
+    /// Allows grantee uri to write the ACL for the applicable object.
     pub fn grant_write_acp_uri(mut self, uri: T) -> Self {
         self.grants
             .push((GrantType::WriteAcp, GrantValue::Uri, uri));
         self
     }
 
+    /// Allows grantee email to read the object ACL.
     pub fn grant_read_acp_email(mut self, email: T) -> Self {
         self.grants
             .push((GrantType::ReadAcp, GrantValue::Email, email));
         self
     }
 
+    /// Allows grantee id to read the object ACL.
     pub fn grant_read_acp_id(mut self, id: T) -> Self {
         self.grants.push((GrantType::ReadAcp, GrantValue::Id, id));
         self
     }
 
+    /// Allows uri to read the object ACL.
     pub fn grant_read_acp_uri(mut self, uri: T) -> Self {
         self.grants.push((GrantType::ReadAcp, GrantValue::Uri, uri));
         self
     }
 
+    /// Gives the grantee email READ, READ_ACP, and WRITE_ACP permissions on the object.
     pub fn grant_full_email(mut self, email: T) -> Self {
         self.grants
             .push((GrantType::FullControl, GrantValue::Email, email));
         self
     }
 
+    /// Gives the grantee id READ, READ_ACP, and WRITE_ACP permissions on the object.
     pub fn grant_full_id(mut self, id: T) -> Self {
         self.grants
             .push((GrantType::FullControl, GrantValue::Id, id));
         self
     }
 
+    /// Gives the uri READ, READ_ACP, and WRITE_ACP permissions on the object.
     pub fn grant_full_uri(mut self, uri: T) -> Self {
         self.grants
             .push((GrantType::FullControl, GrantValue::Uri, uri));
@@ -173,15 +194,13 @@ impl<T: AsRef<str>> AwsRequest for PutObject<T> {
 
         let request = Request::builder()
             .method(Method::PUT)
-            .host(uri.clone(), self.bucket, self.key)?
+            .host(uri, self.bucket, self.key)?
             .optional_header(Headers::EXPIRES, &self.expires.map(|since| since.to_gmt()))?
             .optional_header(Headers::CACHE_CONTROL, &cache)?
             .optional_grants(self.acl, self.grants)?
             .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?)
             .payload_hash(Some(&self.contents))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
-
-        println!("{:#?}", request);
 
         Ok(request.body(HttpBody::from(self.contents))?)
     }

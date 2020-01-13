@@ -2,6 +2,8 @@ use crate::Error;
 use std::str::FromStr;
 
 #[derive(Debug)]
+/// Provides storage class information of the object.
+/// Default storage class is `STANDARD`
 pub enum StorageClass {
     Standard,
     ReducedRedundancy,

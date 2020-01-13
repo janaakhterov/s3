@@ -28,7 +28,7 @@ impl Host for Builder {
         let resource =
             PathAndQuery::try_from(format!("/{}/{}", bucket.as_ref(), key.as_ref()).as_str())?;
 
-        let mut parts = uri.clone().into_parts();
+        let mut parts = uri.into_parts();
         parts.path_and_query = Some(resource);
         let uri = Uri::from_parts(parts)?;
 

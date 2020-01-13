@@ -1,3 +1,5 @@
+/// The CacheControl header used to determine how an object is to be cached.
+/// For more information go to [rfc2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9)
 pub enum CacheControl<T: AsRef<str>> {
     NoCache,
     NoStore,
@@ -24,7 +26,7 @@ impl<T: AsRef<str>> Into<String> for CacheControl<T> {
                 if let Some(value) = value {
                     format!("max-stale={}", value)
                 } else {
-                    format!("max-stale")
+                    "max-stale".to_owned()
                 }
             }
             CacheControl::MinFresh(value) => return format!("min-fresh={}", value),
@@ -35,7 +37,7 @@ impl<T: AsRef<str>> Into<String> for CacheControl<T> {
                 if let Some(value) = value {
                     format!("private={}", value.as_ref())
                 } else {
-                    format!("private")
+                    "private".to_owned()
                 }
             }
             CacheControl::MustRevalidate => return "must-revalidate".to_owned(),

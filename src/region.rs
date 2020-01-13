@@ -2,6 +2,7 @@ use serde::Serialize;
 
 #[derive(Debug, Copy, Clone, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+/// All the possible AWS regions
 pub enum Region {
     Eu,
     EuWest1,

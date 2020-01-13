@@ -3,6 +3,7 @@ use crate::{
     AwsResponse,
     Error,
     Headers,
+    PayloadHash,
     Region,
     SignRequest,
     SigningKey,
@@ -25,8 +26,17 @@ use hyper::{
 };
 use serde::Deserialize;
 
+// ListBucket request Headers, this list *MUST* be in
+// sorted order as it is used in the signing process
+// of each request.
+const HEADERS: [&str; 3] = [
+    Headers::HOST,
+    Headers::X_AMZ_CONTENT_SHA256,
+    Headers::X_AMZ_DATE,
+];
+
 #[derive(Debug, Deserialize)]
-pub struct Owner {
+struct Owner {
     #[serde(rename = "ID")]
     pub id: String,
 
@@ -37,13 +47,13 @@ pub struct Owner {
 #[derive(Debug, Deserialize)]
 #[serde(rename = "ListAllMyBucketsResult")]
 #[serde(rename_all = "PascalCase")]
-pub struct ListBucketsResponse {
+struct ListBucketsResponse {
     owner: Owner,
     buckets: Buckets,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Buckets {
+struct Buckets {
     #[serde(rename = "Bucket")]
     buckets: Vec<Bucket>,
 }
@@ -55,30 +65,20 @@ pub struct Bucket {
     pub name: String,
 }
 
-pub const HEADERS: [&'static str; 3] = [
-    Headers::HOST,
-    Headers::X_AMZ_CONTENT_SHA256,
-    Headers::X_AMZ_DATE,
-];
-
+/// ListBucket request doesn't have any parameters.
+/// Returns a list of buckets owned by the requestor.
 pub struct ListBuckets;
 
 impl AwsRequest for ListBuckets {
     type Response = Vec<Bucket>;
 
-    fn into_request<AR: AsRef<str>>(
+    fn into_request<T: AsRef<str>>(
         self,
         uri: Uri,
-        access_key: AR,
+        access_key: T,
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
-        let payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-
-        let date = format!("{}", Utc::now().format("%Y%m%dT%H%M%SZ"));
-
-        println!("host: {}", uri.host().unwrap_or(""));
-
         let request = Request::builder()
             .method(Method::GET)
             .uri(uri.clone())
@@ -86,16 +86,10 @@ impl AwsRequest for ListBuckets {
                 Headers::HOST,
                 HeaderValue::from_str(uri.host().unwrap_or(""))?,
             )
-            .header(
-                Headers::X_AMZ_CONTENT_SHA256,
-                HeaderValue::from_str(&payload_hash)?,
-            )
-            .header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?)
+            .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        println!("{:#?}", request);
-
-        Ok(request.body(HttpBody::from(HttpBody::empty()))?)
+        Ok(request.body(HttpBody::empty())?)
     }
 
     fn into_response(

@@ -20,8 +20,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .build()?;
 
     let resp = client
-        .send(CreateBucket::new("createbuckettest")
-            .location(Region::UsWest1))
+        .send(CreateBucket::new("createbuckettest").location(Region::UsWest1))
         .await?;
 
     println!("{:#?}", resp);

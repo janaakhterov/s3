@@ -1,16 +1,17 @@
 use crate::{
-    DeleteObject,
-    CreateBucket,
-    GetObject,
     get_object::GetObjectResponse,
-    ListBuckets,
     list_buckets::Bucket,
-    PutObject,
     AwsRequest,
+    CreateBucket,
+    DeleteObject,
     Error,
+    GetObject,
+    ListBuckets,
+    PutObject,
     Region,
     SigningKey,
 };
+use builder::Builder;
 use chrono::{
     DateTime,
     Utc,
@@ -19,65 +20,7 @@ use http::Uri;
 use hyper::Body as HttpBody;
 use std::convert::TryFrom;
 
-#[derive(Debug)]
-pub struct ClientBuilder<T: AsRef<str>> {
-    region: Region,
-    host: Option<T>,
-    access_key: Option<T>,
-    secret_key: Option<T>,
-}
-
-impl<T: AsRef<str>> Default for ClientBuilder<T> {
-    fn default() -> Self {
-        Self {
-            region: Region::UsEast1,
-            host: None,
-            access_key: None,
-            secret_key: None,
-        }
-    }
-}
-
-impl<T: AsRef<str>> ClientBuilder<T> {
-    pub fn new() -> Self {
-        ClientBuilder::default()
-    }
-
-    pub fn region(self, region: Region) -> Self {
-        Self { region, ..self }
-    }
-
-    pub fn host(self, host: T) -> Self {
-        Self {
-            host: Some(host),
-            ..self
-        }
-    }
-
-    pub fn access_key(self, access_key: T) -> Self {
-        Self {
-            access_key: Some(access_key),
-            ..self
-        }
-    }
-
-    pub fn secret_key(self, secret_key: T) -> Self {
-        Self {
-            secret_key: Some(secret_key),
-            ..self
-        }
-    }
-
-    pub fn build(self) -> Result<Client, Error> {
-        if let (Some(access_key), Some(secret_key), Some(host)) =
-            (self.access_key, self.secret_key, self.host)
-        {
-            Client::new(access_key, secret_key, self.region, host)
-        } else {
-            Err(Error::ClientBuildError)
-        }
-    }
-}
+mod builder;
 
 #[derive(Debug)]
 pub struct Client {
@@ -90,6 +33,8 @@ pub struct Client {
 }
 
 impl Client {
+    /// Create a new Client with the given parameters
+    /// **NOTE:** The secret key is not stored in memory after this call.
     pub fn new<T: AsRef<str>>(
         access_key: T,
         secret_key: T,
@@ -99,7 +44,7 @@ impl Client {
         let date = Utc::now();
         Ok(Self {
             client: hyper::Client::builder().build_http(),
-            signing_key: SigningKey::from_date(&secret_key.as_ref(), &date.clone(), region.clone()),
+            signing_key: SigningKey::from_date(&secret_key.as_ref(), &date.clone(), region),
             region,
             date,
             host: Uri::try_from(host.as_ref())?,
@@ -107,15 +52,24 @@ impl Client {
         })
     }
 
-    pub fn builder<T: AsRef<str>>() -> ClientBuilder<T> {
-        ClientBuilder::new()
+    /// Helper method to construct a new builder
+    pub fn builder<T: AsRef<str>>() -> Builder<T> {
+        Builder::new()
     }
 
+    /// A convience method for a `GetObject` request.
+    ///
+    /// Note: If more control is needed over the request parameters use the
+    /// `Client::send()` method directly
     pub async fn get<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<GetObjectResponse, Error> {
         let request = GetObject::new(bucket, key);
         self.send(request).await
     }
 
+    /// A convience method for a `PutObject` request.
+    ///
+    /// Note: If more control is needed over the request parameters use the
+    /// `Client::send()` method directly
     pub async fn put<T: AsRef<str>>(
         &self,
         bucket: T,
@@ -126,20 +80,33 @@ impl Client {
         self.send(request).await
     }
 
+    /// A convience method for a `DeleteObject` request.
+    ///
+    /// Note: If more control is needed over the request parameters use the
+    /// `Client::send()` method directly
     pub async fn delete<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<bool, Error> {
         let request = DeleteObject::new(bucket, key);
         self.send(request).await
     }
 
+    /// A convience method for a `CreateBucket` request.
+    ///
+    /// Note: If more control is needed over the request parameters use the
+    /// `Client::send()` method directly
     pub async fn create<T: AsRef<str>>(&self, bucket: T) -> Result<(), Error> {
         let request = CreateBucket::new(bucket);
         self.send(request).await
     }
 
+    /// A convience method for a `ListBuckets` request.
+    ///
+    /// Note: If more control is needed over the request parameters use the
+    /// `Client::send()` method directly
     pub async fn list_buckets(&self) -> Result<Vec<Bucket>, Error> {
         self.send(ListBuckets).await
     }
 
+    /// Sends any S3 request and returns the requests response type.
     pub async fn send<T: AwsRequest>(&self, request: T) -> Result<T::Response, Error> {
         let request = request.into_request(
             self.host.clone(),
@@ -147,6 +114,8 @@ impl Client {
             &self.signing_key,
             self.region.clone(),
         )?;
+
+        println!("{:#?}", request);
 
         let response = self.client.request(request).await?;
 

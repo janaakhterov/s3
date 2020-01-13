@@ -1,10 +1,10 @@
 use crate::{
     AwsRequest,
-    PayloadHash,
     AwsResponse,
     Error,
     Headers,
     Host,
+    PayloadHash,
     Region,
     SignRequest,
     SigningKey,
@@ -20,18 +20,25 @@ use hyper::{
     Response,
 };
 
-const HEADERS: [&'static str; 3] = [
+// DeleteObject requset Headers, this list *MUST* be in
+// sorted order as it is used in the signing process
+// of each request.
+const HEADERS: [&str; 3] = [
     Headers::HOST,
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
 ];
 
 pub struct DeleteObject<T: AsRef<str>> {
+    /// The bucket name of the bucket containing the object.
     pub bucket: T,
+
+    /// Key name of the object to delete.
     pub key: T,
 }
 
 impl<T: AsRef<str>> DeleteObject<T> {
+    /// Creates a new DeleteObject request with the given bucket and key
     pub fn new(bucket: T, key: T) -> Self {
         DeleteObject { bucket, key }
     }
@@ -49,13 +56,11 @@ impl<T: AsRef<str>> AwsRequest for DeleteObject<T> {
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
             .method(Method::DELETE)
-            .host(uri.clone(), self.bucket, self.key)?
+            .host(uri, self.bucket, self.key)?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        println!("{:#?}", request);
-
-        Ok(request.body(HttpBody::from(HttpBody::empty()))?)
+        Ok(request.body(HttpBody::empty())?)
     }
 
     fn into_response(
