@@ -1,14 +1,11 @@
 use crate::{
-    delete_object::DeleteObject,
-    get_object::{
-        GetObject,
-        GetObjectResponse,
-    },
-    list_buckets::{
-        Bucket,
-        ListBuckets,
-    },
-    put_object::PutObject,
+    DeleteObject,
+    CreateBucket,
+    GetObject,
+    get_object::GetObjectResponse,
+    ListBuckets,
+    list_buckets::Bucket,
+    PutObject,
     AwsRequest,
     Error,
     Region,
@@ -114,11 +111,7 @@ impl Client {
         ClientBuilder::new()
     }
 
-    pub async fn get<T: AsRef<str>>(
-        &self,
-        bucket: T,
-        key: T,
-    ) -> Result<GetObjectResponse, Error> {
+    pub async fn get<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<GetObjectResponse, Error> {
         let request = GetObject::new(bucket, key);
         self.send(request).await
     }
@@ -135,6 +128,11 @@ impl Client {
 
     pub async fn delete<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<bool, Error> {
         let request = DeleteObject::new(bucket, key);
+        self.send(request).await
+    }
+
+    pub async fn create<T: AsRef<str>>(&self, bucket: T) -> Result<(), Error> {
+        let request = CreateBucket::new(bucket);
         self.send(request).await
     }
 

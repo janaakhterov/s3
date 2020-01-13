@@ -1,4 +1,5 @@
 use crate::{
+    Acl,
     Headers,
     OptionalHeader,
 };
@@ -107,6 +108,7 @@ impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
 pub trait OptionalGrants {
     fn optional_grants<T: AsRef<str>>(
         self,
+        acl: Option<Acl>,
         grants: Vec<(GrantType, GrantValue, T)>,
     ) -> Result<Self, Error>
     where
@@ -116,18 +118,22 @@ pub trait OptionalGrants {
 impl OptionalGrants for Builder {
     fn optional_grants<T: AsRef<str>>(
         self,
+        acl: Option<Acl>,
         grants: Vec<(GrantType, GrantValue, T)>,
     ) -> Result<Self, Error>
     where
         Self: Sized,
     {
-        let grants: Grants = grants.into();
-
-        Ok(self
-            .optional_header(Headers::X_AMZ_GRANT_WRITE, &grants.write)?
-            .optional_header(Headers::X_AMZ_GRANT_READ, &grants.read)?
-            .optional_header(Headers::X_AMZ_GRANT_WRITE_ACP, &grants.write_acp)?
-            .optional_header(Headers::X_AMZ_GRANT_READ_ACP, &grants.read_acp)?
-            .optional_header(Headers::X_AMZ_GRANT_FULL_CONTROL, &grants.full_control)?)
+        if let (Some(acl), true) = (acl, grants.len() == 0) {
+            let acl: &'static str = acl.into();
+            self.optional_header(Headers::X_AMZ_ACL, &Some(acl))
+        } else {
+            let grants: Grants = grants.into();
+            self.optional_header(Headers::X_AMZ_GRANT_WRITE, &grants.write)?
+                .optional_header(Headers::X_AMZ_GRANT_READ, &grants.read)?
+                .optional_header(Headers::X_AMZ_GRANT_WRITE_ACP, &grants.write_acp)?
+                .optional_header(Headers::X_AMZ_GRANT_READ_ACP, &grants.read_acp)?
+                .optional_header(Headers::X_AMZ_GRANT_FULL_CONTROL, &grants.full_control)
+        }
     }
 }

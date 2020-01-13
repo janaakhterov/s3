@@ -1,10 +1,10 @@
 use crate::{
-    AwsRequest,
+    Host,
     PayloadHash,
+    AwsRequest,
     AwsResponse,
     Error,
     Headers,
-    Host,
     Region,
     SignRequest,
     SigningKey,
@@ -20,25 +20,31 @@ use hyper::{
     Response,
 };
 
-const HEADERS: [&'static str; 3] = [
+const HEADERS: [&'static str; 9] = [
     Headers::HOST,
+    Headers::X_AMZ_ACL,
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
+    Headers::X_AMZ_GRANT_WRITE,
+    Headers::X_AMZ_GRANT_READ,
+    Headers::X_AMZ_GRANT_WRITE_ACP,
+    Headers::X_AMZ_GRANT_READ_ACP,
+    Headers::X_AMZ_GRANT_FULL_CONTROL,
 ];
 
-pub struct DeleteObject<T: AsRef<str>> {
-    pub bucket: T,
-    pub key: T,
+pub struct DeleteBucket<T: AsRef<str>> {
+    bucket: T,
 }
 
-impl<T: AsRef<str>> DeleteObject<T> {
-    pub fn new(bucket: T, key: T) -> Self {
-        DeleteObject { bucket, key }
+impl<T: AsRef<str>> DeleteBucket<T> {
+    pub fn new(bucket: T) -> Self {
+        DeleteBucket { bucket }
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for DeleteObject<T> {
-    type Response = bool;
+
+impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
+    type Response = ();
 
     fn into_request<AR: AsRef<str>>(
         self,
@@ -48,14 +54,14 @@ impl<T: AsRef<str>> AwsRequest for DeleteObject<T> {
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
-            .method(Method::DELETE)
-            .host(uri.clone(), self.bucket, self.key)?
+            .method(Method::PUT)
+            .host(uri.clone(), self.bucket, "")?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
         println!("{:#?}", request);
 
-        Ok(request.body(HttpBody::from(HttpBody::empty()))?)
+        Ok(request.body(HttpBody::empty())?)
     }
 
     fn into_response(
@@ -64,9 +70,7 @@ impl<T: AsRef<str>> AwsRequest for DeleteObject<T> {
         Box::pin(async move {
             response.error().await?;
 
-            let deleted = response.delete_marker()?.unwrap_or(false);
-
-            Ok(deleted)
+            Ok(())
         })
     }
 }

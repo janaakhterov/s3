@@ -15,6 +15,8 @@ use hyper::{
     StatusCode,
 };
 use std::borrow::Cow;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 pub trait FromGetObjectResponse {
     fn from_response(response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>>
@@ -31,6 +33,20 @@ pub struct GetObjectResponse {
     pub storage_class: StorageClass,
     pub parts_count: Option<u64>,
     pub body: Vec<u8>,
+}
+
+impl Deref for GetObjectResponse {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.body
+    }
+}
+
+impl DerefMut for GetObjectResponse {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.body
+    }
 }
 
 impl GetObjectResponse {

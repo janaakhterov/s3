@@ -13,13 +13,18 @@ use http::{
 use std::convert::TryFrom;
 
 pub trait Host {
-    fn host<T: AsRef<str>>(self, uri: Uri, bucket: T, key: T) -> Result<Self, Error>
+    fn host<B: AsRef<str>, K: AsRef<str>>(self, uri: Uri, bucket: B, key: K) -> Result<Self, Error>
     where
         Self: Sized;
 }
 
 impl Host for Builder {
-    fn host<T: AsRef<str>>(mut self, uri: Uri, bucket: T, key: T) -> Result<Self, Error> {
+    fn host<B: AsRef<str>, K: AsRef<str>>(
+        mut self,
+        uri: Uri,
+        bucket: B,
+        key: K,
+    ) -> Result<Self, Error> {
         let resource =
             PathAndQuery::try_from(format!("/{}/{}", bucket.as_ref(), key.as_ref()).as_str())?;
 

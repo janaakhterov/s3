@@ -5,6 +5,7 @@ use crate::{
     Headers,
     Host,
     OptionalHeader,
+    PayloadHash,
     Region,
     SignRequest,
     SigningKey,
@@ -16,7 +17,6 @@ use chrono::{
 use futures_core::future::BoxFuture;
 use http::uri::Uri;
 use hyper::{
-    header::HeaderValue,
     Body as HttpBody,
     Method,
     Request,
@@ -24,10 +24,8 @@ use hyper::{
 };
 use std::marker::PhantomData;
 
-// mod optional;
 mod response;
 
-// pub(super) use optional::OptionalGetObject;
 use response::FromGetObjectResponse;
 pub(super) use response::GetObjectResponse;
 
@@ -177,15 +175,6 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
-        // GetObject request do not have a payload; ever. So, computing one here
-        // is a waste of time.
-        let payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-
-        let datetime = Utc::now();
-        // Formatting date in rfc1123 was rejected by minio even though it says to use that format
-        // instead using format from aws examples YYYYMMDDTHHMMSSZ
-        let date = &format!("{}", datetime.format("%Y%m%dT%H%M%SZ"));
-
         let request = Request::builder()
             .method(Method::GET)
             .host(uri.clone(), self.bucket, self.key)?
@@ -201,11 +190,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
             )?
             .optional_header(Headers::RANGE, &self.range)?
             .optional_header(Headers::VERSION_ID, &self.version_id)?
-            .header(
-                Headers::X_AMZ_CONTENT_SHA256,
-                HeaderValue::from_str(&payload_hash)?,
-            )
-            .header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?)
+            .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
         println!("{:#?}", request);

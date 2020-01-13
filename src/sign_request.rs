@@ -4,7 +4,10 @@ use crate::{
     Region,
     SigningKey,
 };
-use chrono::NaiveDateTime;
+use chrono::{
+    NaiveDateTime,
+    Utc,
+};
 use http::request::Builder;
 use hyper::header::HeaderValue;
 use sha2::{
@@ -26,7 +29,7 @@ pub trait SignRequest {
 
 impl SignRequest for Builder {
     fn sign<T: AsRef<str>>(
-        self,
+        mut self,
         access_key: T,
         signing_key: &SigningKey,
         region: Region,
@@ -35,6 +38,12 @@ impl SignRequest for Builder {
     where
         Self: Sized,
     {
+        // All requets should have date
+        // Formatting date in rfc1123 was rejected by minio even though it says to use that format
+        // instead using format from aws examples YYYYMMDDTHHMMSSZ
+        let date = &format!("{}", Utc::now().format("%Y%m%dT%H%M%SZ"));
+        self = self.header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
+
         let mut canonical: Vec<u8> = Vec::new();
         let mut signed: Vec<&str> = Vec::new();
 

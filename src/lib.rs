@@ -6,6 +6,7 @@ pub(crate) use crate::{
     headers::Headers,
     host::Host,
     optional_header::OptionalHeader,
+    payload_hash::PayloadHash,
     sign_request::SignRequest,
     signing_key::SigningKey,
 };
@@ -14,6 +15,8 @@ pub use crate::{
     acl::Acl,
     cache::CacheControl,
     client::Client,
+    create_bucket::CreateBucket,
+    delete_bucket::DeleteBucket,
     delete_object::DeleteObject,
     error::Error,
     get_object::GetObject,
@@ -41,11 +44,14 @@ mod grant;
 mod headers;
 mod host;
 mod optional_header;
+mod payload_hash;
 mod region;
 mod sign_request;
 mod signing_key;
 mod storage_class;
 
+mod create_bucket;
+mod delete_bucket;
 mod delete_object;
 mod get_object;
 mod list_buckets;
