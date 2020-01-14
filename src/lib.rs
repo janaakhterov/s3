@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate nom;
+
 pub(crate) use crate::{
     aws_request::AwsRequest,
     aws_response::AwsResponse,
@@ -51,5 +54,7 @@ mod delete_object;
 mod get_object;
 mod list_buckets;
 mod put_object;
+
+mod parser;
 
 pub mod client;
