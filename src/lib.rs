@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate nom;
-
 pub(crate) use crate::{
     aws_request::AwsRequest,
     aws_response::AwsResponse,
