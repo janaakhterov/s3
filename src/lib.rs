@@ -52,6 +52,7 @@ mod get_object;
 mod list_buckets;
 mod put_object;
 
+#[cfg(feature = "credential_file")]
 mod parser;
 
 pub mod client;

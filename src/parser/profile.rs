@@ -1,32 +1,31 @@
+use super::{
+    comment,
+    eof,
+    key::key_value,
+};
 use nom::{
     bytes::complete::{
         tag,
+        take_till,
         take_while,
     },
     character::complete::line_ending,
     IResult,
 };
-
-use super::key::{
-    key_value,
-    Pair,
-};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Profile<'a> {
-    pub(super) name: ProfileName<'a>,
-    pub(super) options: Vec<Pair<'a>>,
+    pub(super) name: &'a str,
+    pub(super) options: HashMap<&'a str, &'a str>,
 }
 
-#[derive(Debug, PartialEq)]
-pub(super) struct ProfileName<'a>(pub(super) &'a str);
-
-pub(super) fn profile<'a>(input: &'a str) -> IResult<&'a str, Profile> {
+fn profile<'a>(input: &'a str) -> IResult<&'a str, Profile> {
     let name = profile_name(input)?;
     let result = line_ending(name.0)?;
     let name = name.1;
 
-    let mut options = Vec::new();
+    let mut options = HashMap::new();
     let mut input = result.0;
 
     loop {
@@ -35,10 +34,7 @@ pub(super) fn profile<'a>(input: &'a str) -> IResult<&'a str, Profile> {
 
             let pair = result.1;
 
-            options.push(Pair {
-                key: pair.0,
-                value: pair.1,
-            });
+            options.insert(pair.0, pair.1);
 
             if let Ok(ending) = line_ending::<&str, ()>(input) {
                 input = ending.0;
@@ -53,40 +49,70 @@ pub(super) fn profile<'a>(input: &'a str) -> IResult<&'a str, Profile> {
     Ok((input, Profile { name, options }))
 }
 
-pub(super) fn profile_name<'a>(input: &'a str) -> IResult<&'a str, ProfileName<'a>> {
+pub(super) fn profiles<'a>(
+    input: &'a str,
+) -> IResult<&'a str, HashMap<&'a str, HashMap<&'a str, &'a str>>> {
+    let (input, _) = take_till(|ch: char| ch == '[')(input)?;
+
+    let mut input = input;
+
+    let mut profiles: HashMap<&'a str, HashMap<&'a str, &'a str>> = HashMap::new();
+
+    loop {
+        // Skip comments
+        if let Ok((end, _)) = comment(input) {
+            input = end;
+        }
+
+        // Slip random spaces
+        let result: IResult<&str, &str> = take_till(|ch: char| ch == '[')(input);
+        if let Ok((skip, _)) = result {
+            input = skip;
+        } else {
+            break;
+        }
+
+        // Attempt to parse profile
+        if let Ok((end, profile)) = profile(input) {
+            input = end;
+            profiles.insert(profile.name, profile.options);
+        }
+
+        // If end of file is reached break out of loop
+        if let Ok(_) = eof(input) {
+            break;
+        }
+    }
+
+    Ok((input, profiles))
+}
+
+fn profile_name<'a>(input: &'a str) -> IResult<&'a str, &'a str> {
     let result = tag("[")(input)?;
     let result = take_while(|ch: char| ch.is_alphabetic() || ch == '_')(result.0)?;
     let end = tag("]")(result.0)?;
 
-    Ok((end.0, ProfileName(result.1)))
+    Ok((end.0, result.1))
 }
 
 #[cfg(test)]
 mod test {
-    use super::{
-        super::key::{
-            Key,
-            Value,
-        },
-        *,
-    };
+    use super::*;
 
     #[test]
     fn profile_test() {
+        let mut map: HashMap<&str, &str> = HashMap::new();
+        map.insert("aws_access_key_id", "6KSUI28SEVTXB63GLSLU");
+        map.insert(
+            "aws_secret_access_key",
+            "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG",
+        );
+
         let token = Ok((
             "",
             Profile {
-                name: ProfileName("default"),
-                options: vec![
-                    Pair {
-                        key: Key("aws_access_key_id"),
-                        value: Value("6KSUI28SEVTXB63GLSLU"),
-                    },
-                    Pair {
-                        key: Key("aws_secret_access_key"),
-                        value: Value("NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG"),
-                    },
-                ],
+                name: "default",
+                options: map,
             },
         ));
         assert_eq!(
@@ -101,7 +127,7 @@ aws_secret_access_key=NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG"#
 
     #[test]
     fn profile_name_test() {
-        let token = Ok(("", ProfileName("default")));
+        let token = Ok(("", "default"));
         assert_eq!(profile_name("[default]"), token);
     }
 }

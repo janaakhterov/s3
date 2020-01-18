@@ -71,4 +71,14 @@ pub enum Error {
 
     #[error("last-modified header is not present on the response to a get object request")]
     LastModifiedNotPresentOnGetResponse,
+
+    #[cfg(feature = "credential_file")]
+    #[error("Failed to parse aws credentials file")]
+    AwsCredentialsParseError,
+
+    #[error("Could not find credentials from environment variables or credentials file")]
+    CouldNotFindCredentials,
+
+    #[error("Found credentials file, but could not find 'aws_access_key_id' *and* 'aws_secret_access_key'")]
+    AwsCredentialsNotFound,
 }

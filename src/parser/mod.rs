@@ -1,15 +1,19 @@
 #![allow(dead_code)]
 use nom::{
-    bytes::complete::{
-        tag,
-        take,
-        take_till,
-        take_while,
+    alt,
+    character::complete::{
+        line_ending,
+        space0,
     },
-    IResult,
+    eof,
+    many_till,
+    named,
+    tag,
+    take,
+    tuple,
 };
 
-mod credentials;
+pub(crate) mod credentials;
 mod key;
 mod profile;
 mod service;
@@ -21,30 +25,17 @@ enum Token {
     Comment,
 }
 
-fn comment<'a>(input: &'a str) -> IResult<&'a str, Token> {
-    let tag = tag("#")(input)?;
-    let result = take_till(|ch: char| ch == '\n')(tag.0)?;
+named!(pub(super) comment(&str) -> (&str, &str, (Vec<&str>, &str)), 
+    tuple!(
+        space0, 
+        pound, 
+        many_till!(take!(1), alt!(line_ending | eof))
+    )
+);
 
-    let result = if result.0.len() > 0 {
-        take(1usize)(result.0)?
-    } else {
-        result
-    };
-
-    let result = (result.0, Token::Comment);
-    Ok(result)
-}
-
-fn equals<'a>(input: &'a str) -> IResult<&'a str, Token> {
-    let tag = tag("=")(input)?;
-    Ok((tag.0, Token::Equals))
-}
-
-fn space<'a>(input: &'a str) -> IResult<&'a str, Token> {
-    let result = take_while(|ch: char| ch.is_whitespace())(input)?;
-    let tag = (result.0, Token::Space);
-    Ok(tag)
-}
+named!(pub(super) pound(&str) -> &str, tag!("#"));
+named!(pub(super) equals(&str) -> &str, tag!("="));
+named!(pub(super) eof(&str) -> &str, eof!());
 
 #[cfg(test)]
 mod test {
@@ -52,19 +43,17 @@ mod test {
 
     #[test]
     fn equals_test() {
-        let token = Ok(("", Token::Equals));
+        let token = Ok(("", "="));
         assert_eq!(equals("="), token);
     }
 
     #[test]
     fn comment_test() {
-        let token = Ok(("", Token::Comment));
-        assert_eq!(comment("# adsflasdflkasdfjlakdjfkdsfj\n"), token);
+        assert!(comment("# adsflasdflkasdfjlakdjfkdsfj\n").is_ok());
     }
 
     #[test]
     fn comment_no_newline_test() {
-        let token = Ok(("", Token::Comment));
-        assert_eq!(comment("# adsflasdflkasdfjlakdjfkdsfj"), token);
+        assert!(comment("# adsflasdflkasdfjlakdjfkdsfj").is_ok());
     }
 }

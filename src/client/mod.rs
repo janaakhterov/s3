@@ -19,13 +19,15 @@ use chrono::{
 use http::Uri;
 use hyper::Body as HttpBody;
 use std::convert::TryFrom;
-use std::path::Path;
 
 mod builder;
 
 static AWS_ACCESS_KEY: &str = "AWS_ACCESS_KEY";
 static AWS_SECRET_KEY: &str = "AWS_SECRET_KEY";
+
+#[cfg(feature = "credential_file")]
 static AWS_SHARED_CREDENTIALS_FILE_ENV: &str = "AWS_SHARED_CREDENTIALS_FILE";
+#[cfg(feature = "credential_file")]
 static AWS_SHARED_CREDENTIALS_FILE: &str = "~/.aws/credentials";
 
 #[derive(Debug)]
@@ -69,16 +71,35 @@ impl Client {
             return Client::new(access_key, secret_key, Region::UsEast1, host)
         }
 
-        let file_name = if let Ok(file_name) = std::env::var(AWS_SHARED_CREDENTIALS_FILE_ENV) {
-            file_name
-        } else {
-            AWS_SHARED_CREDENTIALS_FILE.to_owned()
-        };
+        #[cfg(feature = "credential_file")]
+        {
+            let file_name = if let Ok(file_name) = std::env::var(AWS_SHARED_CREDENTIALS_FILE_ENV) {
+                // This is used incase the environment variable uses '~' for home directory
+                shellexpand::tilde(&file_name).to_string()
+            } else {
+                shellexpand::tilde(&AWS_SHARED_CREDENTIALS_FILE).to_string()
+            };
 
-        let path = Path::new(&file_name);
-        let _contents = std::fs::read_to_string(&path);
+            let path = std::path::Path::new(&file_name);
+            if let Ok(contents) = std::fs::read_to_string(&path) {
+                match crate::parser::credentials::credentials("default", &contents) {
+                    // If file with a default profile and both keys were found we return a client
+                    Ok(Some(cred)) => {
+                        return Client::new(cred.aws_access_key_id, cred.aws_secret_access_key, Region::UsEast1, host)
+                    }
 
-        unimplemented!()
+                    // If file was found and it was parsed, but no keys were found we do nothing
+                    Ok(None) => {},
+
+                    // If file was found, but was unparsable then we error
+                    Err(err) => return Err(err),
+                }
+            }
+
+        }
+
+        // If we've exhausted all possible credential providers we will error out
+        Err(Error::CouldNotFindCredentials)?
     }
 
     /// Helper method to construct a new builder

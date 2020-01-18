@@ -69,13 +69,7 @@ fn service_name<'a>(input: &'a str) -> IResult<&'a str, ServiceName<'a>> {
 
 #[cfg(test)]
 mod test {
-    use super::{
-        super::key::{
-            Key,
-            Value,
-        },
-        *,
-    };
+    use super::*;
 
     #[test]
     fn service_test() {
@@ -84,8 +78,8 @@ mod test {
             Service {
                 name: ServiceName("s3"),
                 options: vec![Pair {
-                    key: Key("max_queries"),
-                    value: Value("20"),
+                    key: "max_queries",
+                    value: "20",
                 }],
             },
         ));
