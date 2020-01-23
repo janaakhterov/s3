@@ -1,42 +1,62 @@
 use crate::{
     Error,
     Headers,
+    Region,
 };
 use http::{
     header::HeaderValue,
     request::Builder,
-    uri::{
-        PathAndQuery,
-        Uri,
-    },
+    uri::Uri,
 };
 use std::convert::TryFrom;
+use url::Url;
 
 pub trait Host {
-    fn host<B: AsRef<str>, K: AsRef<str>>(self, uri: Uri, bucket: B, key: K) -> Result<Self, Error>
+    fn host<B: AsRef<str>, K: AsRef<str>>(
+        self,
+        url: Url,
+        bucket: B,
+        key: K,
+        region: Option<Region>,
+    ) -> Result<Self, Error>
     where
         Self: Sized;
 }
 
 impl Host for Builder {
     fn host<B: AsRef<str>, K: AsRef<str>>(
-        mut self,
-        uri: Uri,
+        self,
+        url: Url,
         bucket: B,
         key: K,
+        region: Option<Region>,
     ) -> Result<Self, Error> {
-        let resource =
-            PathAndQuery::try_from(format!("/{}/{}", bucket.as_ref(), key.as_ref()).as_str())?;
+        let domain = if bucket.as_ref() != "" {
+            format!("{}.{}", bucket.as_ref(), url.domain().unwrap())
+        } else {
+            url.domain().unwrap().to_owned()
+        };
 
-        let mut parts = uri.into_parts();
-        parts.path_and_query = Some(resource);
-        let uri = Uri::from_parts(parts)?;
+        let uri = format!(
+            "{}://{}:{}/{}",
+            url.scheme(),
+            domain,
+            url.port().map(|v| v.to_string()).unwrap_or("".to_owned()),
+            key.as_ref()
+        );
 
-        let host = uri.host().ok_or(Error::HostStrUnset)?.to_owned();
+        let domain = if let Some(region) = region {
+            let region: String = region.into();
 
-        self = self.uri(uri);
-        self = self.header(Headers::HOST, HeaderValue::from_str(&host)?);
+            format!("{}.{}.{}", bucket.as_ref(), region, url.domain().unwrap())
+        } else {
+            domain
+        };
 
-        Ok(self)
+        let uri = Uri::try_from(&uri)?;
+
+        Ok(self
+            .uri(uri)
+            .header(Headers::HOST, HeaderValue::from_str(&domain)?))
     }
 }

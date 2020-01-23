@@ -16,9 +16,9 @@ use chrono::{
     DateTime,
     Utc,
 };
-use http::Uri;
 use hyper::Body as HttpBody;
-use std::convert::TryFrom;
+use std::str::FromStr;
+use url::Url;
 
 mod builder;
 
@@ -37,7 +37,7 @@ pub struct Client {
     signing_key: SigningKey,
     region: Region,
     date: DateTime<Utc>,
-    host: Uri,
+    host: Url,
 }
 
 impl Client {
@@ -55,7 +55,7 @@ impl Client {
             signing_key: SigningKey::from_date(&secret_key.as_ref(), &date.clone(), region),
             region,
             date,
-            host: Uri::try_from(host.as_ref())?,
+            host: Url::from_str(host.as_ref())?,
             access_key: access_key.as_ref().to_owned(),
         })
     }

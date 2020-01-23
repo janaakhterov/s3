@@ -13,7 +13,7 @@ use s3::{
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv()?;
 
-    let client = Client::load("http://127.0.0.1:9000")?;
+    let client = Client::load("http://localhost:9000")?;
 
     let resp = client
         .send(

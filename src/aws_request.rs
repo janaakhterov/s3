@@ -7,15 +7,15 @@ use futures_core::future::BoxFuture;
 use hyper::{
     Body,
     Request,
-    Uri,
 };
+use url::Url;
 
 pub trait AwsRequest {
     type Response;
 
     fn into_request<T: AsRef<str>>(
         self,
-        url: Uri,
+        url: Url,
         access_key: T,
         signing_key: &SigningKey,
         region: Region,

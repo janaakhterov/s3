@@ -14,10 +14,7 @@ use crate::{
     SigningKey,
 };
 use futures_core::future::BoxFuture;
-use http::{
-    method::Method,
-    uri::Uri,
-};
+use http::method::Method;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -25,6 +22,7 @@ use hyper::{
 };
 use quick_xml::se::to_string;
 use serde::Serialize;
+use url::Url;
 
 // CreateBucket request Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
@@ -168,7 +166,7 @@ impl<T: AsRef<str>> AwsRequest for CreateBucket<T> {
 
     fn into_request<AR: AsRef<str>>(
         self,
-        uri: Uri,
+        uri: Url,
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
@@ -190,7 +188,7 @@ impl<T: AsRef<str>> AwsRequest for CreateBucket<T> {
 
         let request = Request::builder()
             .method(Method::PUT)
-            .host(uri, self.bucket, "")?
+            .host(uri, self.bucket, "", None)?
             .optional_grants(self.acl, self.grants)?
             .payload_hash(Some(&payload.as_bytes()))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;

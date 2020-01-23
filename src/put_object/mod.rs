@@ -24,13 +24,13 @@ use futures_core::future::BoxFuture;
 use http::{
     header::HeaderValue,
     method::Method,
-    uri::Uri,
 };
 use hyper::{
     Body as HttpBody,
     Request,
     Response,
 };
+use url::Url;
 
 // PutObject requset Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
@@ -181,7 +181,7 @@ impl<T: AsRef<str>> AwsRequest for PutObject<T> {
 
     fn into_request<AR: AsRef<str>>(
         self,
-        uri: Uri,
+        url: Url,
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
@@ -194,7 +194,7 @@ impl<T: AsRef<str>> AwsRequest for PutObject<T> {
 
         let request = Request::builder()
             .method(Method::PUT)
-            .host(uri, self.bucket, self.key)?
+            .host(url, self.bucket, self.key, None)?
             .optional_header(Headers::EXPIRES, &self.expires.map(|since| since.to_gmt()))?
             .optional_header(Headers::CACHE_CONTROL, &cache)?
             .optional_grants(self.acl, self.grants)?

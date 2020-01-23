@@ -22,6 +22,8 @@ md5 = "0.7.0"
 base64 = "0.11.0"
 nom = { version = "5.1.0", default-features = false, features = [ "std" ], optional = true }
 shellexpand = { version = "1.1.1", default-features = false, optional = true }
+hyper-tls = "0.4.1"
+url = "2.1.1"
 
 [package.metadata.docs.rs]
 features = [ "credential_file" ]

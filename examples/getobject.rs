@@ -17,7 +17,7 @@ async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv()?;
 
     let client = Client::builder()
-        .host("http://127.0.0.1:9000")
+        .host("http://localhost:9000")
         .access_key(&ACCESS_KEY)
         .secret_key(&SECRET_ACCESS_KEY)
         .build()?;

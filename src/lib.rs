@@ -11,6 +11,10 @@ pub(crate) use crate::{
     host::Host,
     optional_header::OptionalHeader,
     payload_hash::PayloadHash,
+    query::{
+        QueryParam,
+        QueryParameter,
+    },
     sign_request::SignRequest,
     signing_key::SigningKey,
 };
@@ -24,6 +28,7 @@ pub use crate::{
     error::Error,
     get_object::GetObject,
     list_buckets::ListBuckets,
+    put_bucket_encryption::PutBucketEncryption,
     put_object::PutObject,
     region::Region,
     storage_class::StorageClass,
@@ -40,6 +45,7 @@ mod headers;
 mod host;
 mod optional_header;
 mod payload_hash;
+mod query;
 mod region;
 mod sign_request;
 mod signing_key;
@@ -50,6 +56,7 @@ mod delete_bucket;
 mod delete_object;
 mod get_object;
 mod list_buckets;
+mod put_bucket_encryption;
 mod put_object;
 
 #[cfg(feature = "credential_file")]

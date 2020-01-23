@@ -17,7 +17,7 @@ async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv()?;
 
     let client = Client::builder()
-        .host("http://127.0.0.1:9000")
+        .host("http://localhost:9000")
         .access_key(&ACCESS_KEY)
         .secret_key(&SECRET_ACCESS_KEY)
         .build()?;
@@ -30,7 +30,7 @@ async fn main() -> Result<(), anyhow::Error> {
                 "random bytes".as_bytes().to_vec(),
             )
             .expires(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0))
-            .grant_read_email("example@gmail.com"),
+            .grant_read_email("example@gmail.com")
         )
         .await?;
 

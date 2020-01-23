@@ -69,6 +69,9 @@ pub enum Error {
     #[error("Invalid uri parts")]
     InvalidUriParts(#[from] http::uri::InvalidUriParts),
 
+    #[error("Invalid uri parts")]
+    InvalidUrl(#[from] url::ParseError),
+
     #[error("last-modified header is not present on the response to a get object request")]
     LastModifiedNotPresentOnGetResponse,
 

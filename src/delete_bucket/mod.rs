@@ -10,15 +10,13 @@ use crate::{
     SigningKey,
 };
 use futures_core::future::BoxFuture;
-use http::{
-    method::Method,
-    uri::Uri,
-};
+use http::method::Method;
 use hyper::{
     Body as HttpBody,
     Request,
     Response,
 };
+use url::Url;
 
 // DeleteBucket request Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
@@ -52,14 +50,14 @@ impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
 
     fn into_request<AR: AsRef<str>>(
         self,
-        uri: Uri,
+        url: Url,
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
             .method(Method::PUT)
-            .host(uri, self.bucket, "")?
+            .host(url, self.bucket, "", None)?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 

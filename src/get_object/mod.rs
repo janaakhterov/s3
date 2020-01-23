@@ -15,7 +15,6 @@ use chrono::{
     Utc,
 };
 use futures_core::future::BoxFuture;
-use http::uri::Uri;
 use hyper::{
     Body as HttpBody,
     Method,
@@ -23,6 +22,7 @@ use hyper::{
     Response,
 };
 use std::marker::PhantomData;
+use url::Url;
 
 mod response;
 
@@ -191,14 +191,14 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
 
     fn into_request<AR: AsRef<str>>(
         self,
-        uri: Uri,
+        url: Url,
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
             .method(Method::GET)
-            .host(uri, self.bucket, self.key)?
+            .host(url, self.bucket, self.key, None)?
             .optional_header(Headers::IF_MATCH, &self.if_match)?
             .optional_header(
                 Headers::IF_MODIFIED_SINCE,
@@ -229,7 +229,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, Option<GetObjectResponse>> {
 
     fn into_request<AR: AsRef<str>>(
         self,
-        uri: Uri,
+        url: Url,
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
@@ -246,7 +246,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, Option<GetObjectResponse>> {
                 version_id: self.version_id,
                 _phantom: PhantomData,
             },
-            uri,
+            url,
             access_key,
             signing_key,
             region,

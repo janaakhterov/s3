@@ -2,7 +2,7 @@ extern crate s3;
 
 use s3::{
     client::Client,
-    DeleteObject,
+    PutBucketEncryption,
 };
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
@@ -19,7 +19,10 @@ async fn main() -> Result<(), anyhow::Error> {
         .build()?;
 
     let resp = client
-        .send(DeleteObject::new("test", "putobject_example_file"))
+        .send(
+            // NOT SUPPORTED IN Min.io
+            PutBucketEncryption::new("test").encrypt_with_sse()
+        )
         .await?;
 
     println!("{:#?}", resp);

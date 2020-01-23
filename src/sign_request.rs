@@ -61,7 +61,9 @@ impl SignRequest for Builder {
         canonical.extend_from_slice(&self.uri_ref().ok_or(Error::UriNotSet)?.path().as_bytes());
         canonical.push(b'\n');
 
-        // TODO: QueryParameters
+        if let Some(params) = self.uri_ref().ok_or(Error::UriNotSet)?.query() {
+            canonical.extend_from_slice(&params.as_bytes());
+        }
         canonical.push(b'\n');
 
         for header in headers {
@@ -93,6 +95,8 @@ impl SignRequest for Builder {
         {
             canonical.extend_from_slice(&header.as_bytes());
         }
+
+        println!("{}", String::from_utf8_lossy(&canonical));
 
         let mut hasher = Sha256::new();
         hasher.input(canonical);
