@@ -18,7 +18,6 @@ use hyper::{
     Request,
     Response,
 };
-use serde::Serialize;
 use url::Url;
 
 // DeleteBucketEncryption requset Headers, this list *MUST* be in
@@ -29,14 +28,6 @@ const HEADERS: [&str; 3] = [
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
 ];
-
-#[derive(Default, Debug, Serialize)]
-struct Rule {
-    #[serde(rename = "SSEAlgorithm")]
-    sse: Option<String>,
-    #[serde(rename = "KMSMasterKeyID")]
-    kms_key: Option<String>,
-}
 
 pub struct DeleteBucketEncryption<T: AsRef<str>> {
     /// Bucket name from which to Delete the encryption.

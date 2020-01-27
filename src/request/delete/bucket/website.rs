@@ -13,16 +13,7 @@ use hyper::{
     Request,
     Response,
 };
-use serde::Serialize;
 use url::Url;
-
-#[derive(Default, Debug, Serialize)]
-struct Rule {
-    #[serde(rename = "SSEAlgorithm")]
-    sse: Option<String>,
-    #[serde(rename = "KMSMasterKeyID")]
-    kms_key: Option<String>,
-}
 
 pub struct DeleteBucketWebsite<T: AsRef<str>, V: AsRef<str>>(SubResource<T, V>);
 
