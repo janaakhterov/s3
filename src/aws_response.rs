@@ -97,9 +97,13 @@ impl AwsResponse for Response<HttpBody> {
                     bytes.extend_from_slice(&chunk);
                 }
 
-                let error = String::from_utf8_lossy(&bytes);
-                let error: ResponseError = quick_xml::de::from_str(&error)?;
-                return Err(Error::ResponseError(error));
+                if bytes.is_empty() {
+                    Err(Error::StatusCode(self.status()))
+                } else {
+                    let error = String::from_utf8_lossy(&bytes);
+                    let error: ResponseError = quick_xml::de::from_str(&error)?;
+                    Err(Error::ResponseError(error))
+                }
             } else {
                 Ok(())
             }

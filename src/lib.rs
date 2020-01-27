@@ -22,15 +22,28 @@ pub(crate) use crate::{
 pub use crate::{
     acl::Acl,
     cache::CacheControl,
-    create_bucket::CreateBucket,
-    delete_bucket::DeleteBucket,
-    delete_object::DeleteObject,
     error::Error,
-    get_object::GetObject,
-    list_buckets::ListBuckets,
-    put_bucket_encryption::PutBucketEncryption,
-    put_object::PutObject,
     region::Region,
+    request::{
+        create_bucket::CreateBucket,
+        delete::{
+            bucket::{
+                encryption::DeleteBucketEncryption,
+                inventory_config::DeleteBucketInventoryConfig,
+                metrics_config::DeleteBucketMetricsConfig,
+                policy::DeleteBucketPolicy,
+                replication::DeleteBucketReplication,
+                tagging::DeleteBucketTagging,
+                website::DeleteBucketWebsite,
+                DeleteBucket,
+            },
+            object::DeleteObject,
+        },
+        get_object::GetObject,
+        list_buckets::ListBuckets,
+        put_bucket_encryption::PutBucketEncryption,
+        put_object::PutObject,
+    },
     storage_class::StorageClass,
 };
 
@@ -47,17 +60,10 @@ mod optional_header;
 mod payload_hash;
 mod query;
 mod region;
+mod request;
 mod sign_request;
 mod signing_key;
 mod storage_class;
-
-mod create_bucket;
-mod delete_bucket;
-mod delete_object;
-mod get_object;
-mod list_buckets;
-mod put_bucket_encryption;
-mod put_object;
 
 #[cfg(feature = "credential_file")]
 mod parser;

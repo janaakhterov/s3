@@ -5,6 +5,8 @@ use crate::{
     Headers,
     Host,
     PayloadHash,
+    QueryParam,
+    QueryParameter,
     Region,
     SignRequest,
     SigningKey,
@@ -16,36 +18,42 @@ use hyper::{
     Request,
     Response,
 };
+use serde::Serialize;
 use url::Url;
 
-// DeleteBucket request Headers, this list *MUST* be in
+// DeleteBucketInventoryConfig requset Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
 // of each request.
-const HEADERS: [&str; 9] = [
+const HEADERS: [&str; 3] = [
     Headers::HOST,
-    Headers::X_AMZ_ACL,
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
-    Headers::X_AMZ_GRANT_WRITE,
-    Headers::X_AMZ_GRANT_READ,
-    Headers::X_AMZ_GRANT_WRITE_ACP,
-    Headers::X_AMZ_GRANT_READ_ACP,
-    Headers::X_AMZ_GRANT_FULL_CONTROL,
 ];
 
-pub struct DeleteBucket<T: AsRef<str>> {
-    /// The bucket to delete.
-    bucket: T,
+#[derive(Default, Debug, Serialize)]
+struct Rule {
+    #[serde(rename = "SSEAlgorithm")]
+    sse: Option<String>,
+    #[serde(rename = "KMSMasterKeyID")]
+    kms_key: Option<String>,
 }
 
-impl<T: AsRef<str>> DeleteBucket<T> {
-    /// Create a new DeleteBucket request with the given bucket name.
-    pub fn new(bucket: T) -> Self {
-        DeleteBucket { bucket }
+pub struct DeleteBucketInventoryConfig<T: AsRef<str>, I: AsRef<str>> {
+    /// Bucket name from which to Delete the encryption.
+    pub bucket: T,
+
+    /// The ID used to identify the inventory configuration.
+    pub inventory_id: I,
+}
+
+impl<T: AsRef<str>, I: AsRef<str>> DeleteBucketInventoryConfig<T, I> {
+    /// Create a new DeleteBucketInventoryConfig request with default parameters
+    pub fn new(bucket: T, inventory_id: I) -> Self {
+        DeleteBucketInventoryConfig { bucket, inventory_id }
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
+impl<T: AsRef<str>, I: AsRef<str>> AwsRequest for DeleteBucketInventoryConfig<T, I> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -56,8 +64,10 @@ impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
-            .method(Method::PUT)
+            .method(Method::DELETE)
             .host(url, self.bucket, "", None)?
+            .query_param(QueryParameter::INVENTORY, "")?
+            .query_param(QueryParameter::ID, self.inventory_id.as_ref())?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 

@@ -84,4 +84,7 @@ pub enum Error {
 
     #[error("Found credentials file, but could not find 'aws_access_key_id' *and* 'aws_secret_access_key'")]
     AwsCredentialsNotFound,
+
+    #[error("Unsuccessful status code received. {0:?}")]
+    StatusCode(hyper::StatusCode),
 }

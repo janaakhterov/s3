@@ -1,12 +1,8 @@
 extern crate s3;
 
-use chrono::{
-    offset::TimeZone,
-    Utc,
-};
 use s3::{
     client::Client,
-    PutObject,
+    DeleteBucketEncryption,
 };
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
@@ -24,13 +20,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let resp = client
         .send(
-            PutObject::new(
-                "test",
-                "putobject_example_file",
-                "random bytes".as_bytes().to_vec(),
-            )
-            .expires(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0))
-            .grant_read_email("example@gmail.com"),
+            // NOT SUPPORTED IN Min.io
+            DeleteBucketEncryption::new("imageapi"),
         )
         .await?;
 

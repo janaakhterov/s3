@@ -1,9 +1,9 @@
 use crate::{
     AwsRequest,
-    Host,
     AwsResponse,
     Error,
     Headers,
+    Host,
     PayloadHash,
     Region,
     SignRequest,

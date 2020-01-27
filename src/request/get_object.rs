@@ -1,5 +1,6 @@
 use crate::{
     AwsRequest,
+    AwsResponse,
     Error,
     Gmt,
     Headers,
@@ -9,25 +10,30 @@ use crate::{
     Region,
     SignRequest,
     SigningKey,
+    StorageClass,
 };
 use chrono::{
     DateTime,
     Utc,
 };
 use futures_core::future::BoxFuture;
+use http_body::Body;
 use hyper::{
     Body as HttpBody,
     Method,
     Request,
     Response,
+    StatusCode,
 };
-use std::marker::PhantomData;
+use std::{
+    borrow::Cow,
+    marker::PhantomData,
+    ops::{
+        Deref,
+        DerefMut,
+    },
+};
 use url::Url;
-
-mod response;
-
-use response::FromGetObjectResponse;
-pub(super) use response::GetObjectResponse;
 
 // GetObject request Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
@@ -257,5 +263,88 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, Option<GetObjectResponse>> {
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Self::Response::from_response(response)
+    }
+}
+
+pub trait FromGetObjectResponse {
+    fn from_response(response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>>
+    where
+        Self: Sized;
+}
+
+#[derive(Debug)]
+pub struct GetObjectResponse {
+    pub last_modified: DateTime<Utc>,
+    pub etag: String,
+    pub version_id: Option<String>,
+    pub expires: Option<DateTime<Utc>>,
+    pub storage_class: StorageClass,
+    pub parts_count: Option<u64>,
+    pub body: Vec<u8>,
+}
+
+impl Deref for GetObjectResponse {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.body
+    }
+}
+
+impl DerefMut for GetObjectResponse {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.body
+    }
+}
+
+impl GetObjectResponse {
+    pub fn as_str(&self) -> Cow<str> {
+        String::from_utf8_lossy(&self.body)
+    }
+}
+
+impl FromGetObjectResponse for GetObjectResponse {
+    fn from_response(mut response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>> {
+        Box::pin(async move {
+            response.error().await?;
+
+            let last_modified = response.last_modified()?;
+            let etag = response.etag()?;
+            let version_id = response.version_id()?;
+            let expires = response.expires()?;
+            let storage_class = response.storage_class()?;
+            let parts_count = response.parts_count()?;
+
+            let mut bytes: Vec<u8> = Vec::new();
+
+            while let Some(next) = response.data().await {
+                let chunk = next?;
+                bytes.extend_from_slice(&chunk);
+            }
+
+            Ok(GetObjectResponse {
+                last_modified,
+                etag,
+                version_id,
+                storage_class,
+                expires,
+                parts_count,
+                body: bytes,
+            })
+        })
+    }
+}
+
+impl FromGetObjectResponse for Option<GetObjectResponse> {
+    fn from_response(response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>> {
+        Box::pin(async move {
+            if response.status() == StatusCode::NOT_MODIFIED {
+                return Ok(None);
+            }
+
+            Ok(Some(
+                <GetObjectResponse as FromGetObjectResponse>::from_response(response).await?,
+            ))
+        })
     }
 }

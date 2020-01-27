@@ -1,6 +1,8 @@
 use crate::{
-    get_object::GetObjectResponse,
-    list_buckets::Bucket,
+    request::{
+        get_object::GetObjectResponse,
+        list_buckets::Bucket,
+    },
     AwsRequest,
     CreateBucket,
     DeleteObject,
@@ -68,7 +70,7 @@ impl Client {
         let secret_key = std::env::var(AWS_SECRET_KEY);
 
         if let (Ok(access_key), Ok(secret_key)) = (access_key, secret_key) {
-            return Client::new(access_key, secret_key, Region::UsEast1, host)
+            return Client::new(access_key, secret_key, Region::UsEast1, host);
         }
 
         #[cfg(feature = "credential_file")]
@@ -85,17 +87,21 @@ impl Client {
                 match crate::parser::credentials::credentials("default", &contents) {
                     // If file with a default profile and both keys were found we return a client
                     Ok(Some(cred)) => {
-                        return Client::new(cred.aws_access_key_id, cred.aws_secret_access_key, Region::UsEast1, host)
+                        return Client::new(
+                            cred.aws_access_key_id,
+                            cred.aws_secret_access_key,
+                            Region::UsEast1,
+                            host,
+                        )
                     }
 
                     // If file was found and it was parsed, but no keys were found we do nothing
-                    Ok(None) => {},
+                    Ok(None) => {}
 
                     // If file was found, but was unparsable then we error
                     Err(err) => return Err(err),
                 }
             }
-
         }
 
         // If we've exhausted all possible credential providers we will error out

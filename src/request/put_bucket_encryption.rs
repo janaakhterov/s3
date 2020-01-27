@@ -1,12 +1,12 @@
 use crate::{
     AwsRequest,
     AwsResponse,
-    QueryParameter,
-    QueryParam,
     Error,
     Headers,
     Host,
     PayloadHash,
+    QueryParam,
+    QueryParameter,
     Region,
     SignRequest,
     SigningKey,
@@ -100,7 +100,7 @@ impl<T: AsRef<str>> AwsRequest for PutBucketEncryption<T> {
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let mut config = ServerSideEncryptionConfiguration {
-            rule: Rule::default()
+            rule: Rule::default(),
         };
 
         if let Some(encryption) = self.encryption {

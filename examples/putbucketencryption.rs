@@ -21,7 +21,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let resp = client
         .send(
             // NOT SUPPORTED IN Min.io
-            PutBucketEncryption::new("test").encrypt_with_sse()
+            PutBucketEncryption::new("test").encrypt_with_sse(),
         )
         .await?;
 
