@@ -15,9 +15,9 @@ use hyper::{
 };
 use url::Url;
 
-pub struct DeletePublicAccessBlock<T: AsRef<str>, V: AsRef<str>>(SubResource<T, V>);
+pub struct DeletePublicAccessBlock<'a, T: AsRef<str>,>(SubResource<'a, T>);
 
-impl<T: AsRef<str>, V: AsRef<str>> DeletePublicAccessBlock<T, V> {
+impl<'a, T: AsRef<str>,> DeletePublicAccessBlock<'a, T> {
     /// Create a new DeletePublicAccessBlock request with default parameters
     pub fn new(bucket: T) -> Self {
         DeletePublicAccessBlock(SubResource {
@@ -29,7 +29,7 @@ impl<T: AsRef<str>, V: AsRef<str>> DeletePublicAccessBlock<T, V> {
     }
 }
 
-impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeletePublicAccessBlock<T, V> {
+impl<'a, T: AsRef<str>,> AwsRequest for DeletePublicAccessBlock<'a, T> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -45,6 +45,10 @@ impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeletePublicAccessBlock<T, V> 
     fn into_response(
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
-        SubResource::<T, V>::into_response(response)
+        Box::pin(async move {
+            SubResource::<'a, T>::into_response(response).await?;
+
+            Ok(())
+        })
     }
 }

@@ -25,7 +25,7 @@ pub trait AwsResponse {
     fn expires(&self) -> Result<Option<DateTime<Utc>>, Error>;
     fn storage_class(&self) -> Result<StorageClass, Error>;
     fn parts_count(&self) -> Result<Option<u64>, Error>;
-    fn error(&mut self) -> BoxFuture<Result<(), Error>>;
+    fn error(&mut self) -> BoxFuture<Result<Vec<u8>, Error>>;
     fn delete_marker(&mut self) -> Result<Option<bool>, Error>;
 }
 
@@ -87,16 +87,16 @@ impl AwsResponse for Response<HttpBody> {
             .transpose()?)
     }
 
-    fn error(&mut self) -> BoxFuture<Result<(), Error>> {
+    fn error(&mut self) -> BoxFuture<Result<Vec<u8>, Error>> {
         Box::pin(async move {
+            let mut bytes: Vec<u8> = Vec::new();
+
+            while let Some(next) = self.data().await {
+                let chunk = next?;
+                bytes.extend_from_slice(&chunk);
+            }
+
             if !self.status().is_success() {
-                let mut bytes: Vec<u8> = Vec::new();
-
-                while let Some(next) = self.data().await {
-                    let chunk = next?;
-                    bytes.extend_from_slice(&chunk);
-                }
-
                 if bytes.is_empty() {
                     Err(Error::StatusCode(self.status()))
                 } else {
@@ -105,7 +105,7 @@ impl AwsResponse for Response<HttpBody> {
                     Err(Error::ResponseError(error))
                 }
             } else {
-                Ok(())
+                Ok(bytes)
             }
         })
     }

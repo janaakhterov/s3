@@ -15,9 +15,9 @@ use hyper::{
 };
 use url::Url;
 
-pub struct DeleteBucketWebsite<T: AsRef<str>, V: AsRef<str>>(SubResource<T, V>);
+pub struct DeleteBucketWebsite<'a, T: AsRef<str>,>(SubResource<'a, T>);
 
-impl<T: AsRef<str>, V: AsRef<str>> DeleteBucketWebsite<T, V> {
+impl<'a, T: AsRef<str>,> DeleteBucketWebsite<'a, T> {
     /// Create a new DeleteBucketWebsite request with default parameters
     pub fn new(bucket: T) -> Self {
         DeleteBucketWebsite(SubResource {
@@ -29,7 +29,7 @@ impl<T: AsRef<str>, V: AsRef<str>> DeleteBucketWebsite<T, V> {
     }
 }
 
-impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteBucketWebsite<T, V> {
+impl<'a, T: AsRef<str>,> AwsRequest for DeleteBucketWebsite<'a, T> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -45,6 +45,10 @@ impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteBucketWebsite<T, V> {
     fn into_response(
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
-        SubResource::<T, V>::into_response(response)
+        Box::pin(async move {
+            SubResource::<'a, T>::into_response(response).await?;
+
+            Ok(())
+        })
     }
 }

@@ -15,11 +15,11 @@ use hyper::{
 };
 use url::Url;
 
-pub struct DeleteBucketMetricsConfig<T: AsRef<str>, V: AsRef<str>>(SubResource<T, V>);
+pub struct DeleteBucketMetricsConfig<'a, T: AsRef<str>,>(SubResource<'a, T>);
 
-impl<T: AsRef<str>, V: AsRef<str>> DeleteBucketMetricsConfig<T, V> {
+impl<'a, T: AsRef<str>,> DeleteBucketMetricsConfig<'a, T> {
     /// Create a new DeleteBucketMetricsConfig request with default parameters
-    pub fn new(bucket: T, metrics_id: V) -> Self {
+    pub fn new(bucket: T, metrics_id: &'a str) -> Self {
         DeleteBucketMetricsConfig(SubResource {
             bucket,
             method: Method::DELETE,
@@ -32,7 +32,7 @@ impl<T: AsRef<str>, V: AsRef<str>> DeleteBucketMetricsConfig<T, V> {
     }
 }
 
-impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteBucketMetricsConfig<T, V> {
+impl<'a, T: AsRef<str>,> AwsRequest for DeleteBucketMetricsConfig<'a, T> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -48,6 +48,10 @@ impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteBucketMetricsConfig<T, V
     fn into_response(
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
-        SubResource::<T, V>::into_response(response)
+        Box::pin(async move {
+            SubResource::<'a, T>::into_response(response).await?;
+
+            Ok(())
+        })
     }
 }

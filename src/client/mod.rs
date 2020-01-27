@@ -1,6 +1,6 @@
 use crate::{
     request::{
-        get_object::GetObjectResponse,
+        get::object::GetObjectResponse,
         list_buckets::Bucket,
     },
     AwsRequest,

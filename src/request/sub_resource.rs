@@ -12,6 +12,7 @@ use crate::{
 };
 use futures_core::future::BoxFuture;
 use http::method::Method;
+use http_body::Body;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -25,15 +26,15 @@ const HEADERS: [&str; 3] = [
     Headers::X_AMZ_DATE,
 ];
 
-pub(crate) struct SubResource<T: AsRef<str>, V: AsRef<str>> {
+pub(crate) struct SubResource<'a, T: AsRef<str>,> {
     pub(crate) bucket: T,
     pub(crate) method: Method,
-    pub(crate) key: Option<String>,
-    pub(crate) params: Vec<(&'static str, Option<V>)>,
+    pub(crate) key: Option<&'a str>,
+    pub(crate) params: Vec<(&'static str, Option<&'a str>)>,
 }
 
-impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for SubResource<T, V> {
-    type Response = ();
+impl<'a, T: AsRef<str>,> AwsRequest for SubResource<'a, T> {
+    type Response = Vec<u8>;
 
     fn into_request<AR: AsRef<str>>(
         self,
@@ -44,7 +45,7 @@ impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for SubResource<T, V> {
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
             .method(self.method)
-            .host(url, self.bucket, self.key.unwrap_or(String::new()), None)?
+            .host(url, self.bucket, self.key.unwrap_or(""), None)?
             .query_param(&self.params[..])?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
@@ -58,7 +59,14 @@ impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for SubResource<T, V> {
         Box::pin(async move {
             response.error().await?;
 
-            Ok(())
+            let mut bytes: Vec<u8> = Vec::new();
+
+            while let Some(next) = response.data().await {
+                let chunk = next?;
+                bytes.extend_from_slice(&chunk);
+            }
+
+            Ok(bytes)
         })
     }
 }

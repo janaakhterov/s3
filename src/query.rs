@@ -23,6 +23,7 @@ impl QueryParameter {
     pub const WEBSITE: &'static str = "website";
     pub const VERSION_ID: &'static str = "VersionId";
     pub const PUBLIC_ACCESS_BLOCK: &'static str = "publicAccessBlock";
+    pub const ACCELERATE: &'static str = "accelerate";
     pub const ID: &'static str = "Id";
 }
 

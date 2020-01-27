@@ -15,11 +15,11 @@ use hyper::{
 };
 use url::Url;
 
-pub struct DeleteObjectTagging<T: AsRef<str>, V: AsRef<str>>(SubResource<T, V>);
+pub struct DeleteObjectTagging<'a, T: AsRef<str>,>(SubResource<'a, T>);
 
-impl<T: AsRef<str>, V: AsRef<str>> DeleteObjectTagging<T, V> {
+impl<'a, T: AsRef<str>,> DeleteObjectTagging<'a, T> {
     /// Create a new DeleteObjectTagging request with default parameters
-    pub fn new(bucket: T, key: String) -> Self {
+    pub fn new(bucket: T, key: &'a str) -> Self {
         DeleteObjectTagging(SubResource {
             bucket,
             method: Method::DELETE,
@@ -28,7 +28,7 @@ impl<T: AsRef<str>, V: AsRef<str>> DeleteObjectTagging<T, V> {
         })
     }
 
-    pub fn version_id(mut self, version_id: V) -> Self {
+    pub fn version_id(mut self, version_id: &'a str) -> Self {
         self.0
             .params
             .push((QueryParameter::VERSION_ID, Some(version_id)));
@@ -36,7 +36,7 @@ impl<T: AsRef<str>, V: AsRef<str>> DeleteObjectTagging<T, V> {
     }
 }
 
-impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteObjectTagging<T, V> {
+impl<'a, T: AsRef<str>,> AwsRequest for DeleteObjectTagging<'a, T> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -52,6 +52,10 @@ impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteObjectTagging<T, V> {
     fn into_response(
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
-        SubResource::<T, V>::into_response(response)
+        Box::pin(async move {
+            SubResource::<'a, T>::into_response(response).await?;
+
+            Ok(())
+        })
     }
 }

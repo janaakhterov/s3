@@ -44,7 +44,10 @@ pub use crate::{
             },
             public_access_block::DeletePublicAccessBlock,
         },
-        get_object::GetObject,
+        get::{
+            bucket::accelerate_config::GetBucketAccelerateConfig,
+            object::GetObject,
+        },
         list_buckets::ListBuckets,
         put_bucket_encryption::PutBucketEncryption,
         put_object::PutObject,

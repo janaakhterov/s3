@@ -17,7 +17,6 @@ use chrono::{
     Utc,
 };
 use futures_core::future::BoxFuture;
-use http_body::Body;
 use hyper::{
     Body as HttpBody,
     Method,
@@ -306,7 +305,7 @@ impl GetObjectResponse {
 impl FromGetObjectResponse for GetObjectResponse {
     fn from_response(mut response: Response<HttpBody>) -> BoxFuture<'static, Result<Self, Error>> {
         Box::pin(async move {
-            response.error().await?;
+            let bytes = response.error().await?;
 
             let last_modified = response.last_modified()?;
             let etag = response.etag()?;
@@ -314,13 +313,6 @@ impl FromGetObjectResponse for GetObjectResponse {
             let expires = response.expires()?;
             let storage_class = response.storage_class()?;
             let parts_count = response.parts_count()?;
-
-            let mut bytes: Vec<u8> = Vec::new();
-
-            while let Some(next) = response.data().await {
-                let chunk = next?;
-                bytes.extend_from_slice(&chunk);
-            }
 
             Ok(GetObjectResponse {
                 last_modified,
