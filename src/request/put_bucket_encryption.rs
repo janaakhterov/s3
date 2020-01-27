@@ -120,7 +120,7 @@ impl<T: AsRef<str>> AwsRequest for PutBucketEncryption<T> {
         let request = Request::builder()
             .method(Method::PUT)
             .host(url, self.bucket, "", Some(region))?
-            .query_param(QueryParameter::ENCRYPTION, "")?
+            .query_param(QueryParameter::ENCRYPTION)?
             .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?)
             .payload_hash(Some(&payload.as_bytes()))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;

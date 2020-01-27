@@ -5,3 +5,5 @@ pub mod put_bucket_encryption;
 pub mod put_object;
 
 pub mod delete;
+
+pub(crate) mod sub_resource;

@@ -6,7 +6,6 @@ use crate::{
     Host,
     PayloadHash,
     QueryParam,
-    QueryParameter,
     Region,
     SignRequest,
     SigningKey,
@@ -18,39 +17,22 @@ use hyper::{
     Request,
     Response,
 };
-use serde::Serialize;
 use url::Url;
 
-// DeleteBucketEncryption requset Headers, this list *MUST* be in
-// sorted order as it is used in the signing process
-// of each request.
 const HEADERS: [&str; 3] = [
     Headers::HOST,
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
 ];
 
-#[derive(Default, Debug, Serialize)]
-struct Rule {
-    #[serde(rename = "SSEAlgorithm")]
-    sse: Option<String>,
-    #[serde(rename = "KMSMasterKeyID")]
-    kms_key: Option<String>,
+pub(crate) struct SubResource<T: AsRef<str>, V: AsRef<str>> {
+    pub(crate) bucket: T,
+    pub(crate) method: Method,
+    pub(crate) key: Option<String>,
+    pub(crate) params: Vec<(&'static str, Option<V>)>,
 }
 
-pub struct DeleteBucketEncryption<T: AsRef<str>> {
-    /// Bucket name from which to Delete the encryption.
-    pub bucket: T,
-}
-
-impl<T: AsRef<str>> DeleteBucketEncryption<T> {
-    /// Create a new DeleteBucketEncryption request with default parameters
-    pub fn new(bucket: T) -> Self {
-        DeleteBucketEncryption { bucket }
-    }
-}
-
-impl<T: AsRef<str>> AwsRequest for DeleteBucketEncryption<T> {
+impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for SubResource<T, V> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -61,9 +43,9 @@ impl<T: AsRef<str>> AwsRequest for DeleteBucketEncryption<T> {
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
-            .method(Method::DELETE)
-            .host(url, self.bucket, "", None)?
-            .query_param(QueryParameter::ENCRYPTION)?
+            .method(self.method)
+            .host(url, self.bucket, self.key.unwrap_or(String::new()), None)?
+            .query_param(&self.params[..])?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 

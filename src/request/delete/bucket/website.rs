@@ -1,34 +1,20 @@
 use crate::{
     AwsRequest,
-    AwsResponse,
     Error,
-    Headers,
-    Host,
-    PayloadHash,
-    QueryParam,
     QueryParameter,
     Region,
-    SignRequest,
     SigningKey,
+    SubResource,
 };
 use futures_core::future::BoxFuture;
-use http::method::Method;
 use hyper::{
     Body as HttpBody,
+    Method,
     Request,
     Response,
 };
 use serde::Serialize;
 use url::Url;
-
-// DeleteBucketWebsite requset Headers, this list *MUST* be in
-// sorted order as it is used in the signing process
-// of each request.
-const HEADERS: [&str; 3] = [
-    Headers::HOST,
-    Headers::X_AMZ_CONTENT_SHA256,
-    Headers::X_AMZ_DATE,
-];
 
 #[derive(Default, Debug, Serialize)]
 struct Rule {
@@ -38,19 +24,21 @@ struct Rule {
     kms_key: Option<String>,
 }
 
-pub struct DeleteBucketWebsite<T: AsRef<str>> {
-    /// Bucket name from which to Delete the encryption.
-    pub bucket: T,
-}
+pub struct DeleteBucketWebsite<T: AsRef<str>, V: AsRef<str>>(SubResource<T, V>);
 
-impl<T: AsRef<str>> DeleteBucketWebsite<T> {
+impl<T: AsRef<str>, V: AsRef<str>> DeleteBucketWebsite<T, V> {
     /// Create a new DeleteBucketWebsite request with default parameters
     pub fn new(bucket: T) -> Self {
-        DeleteBucketWebsite { bucket }
+        DeleteBucketWebsite(SubResource {
+            bucket,
+            method: Method::DELETE,
+            key: None,
+            params: vec![(QueryParameter::WEBSITE, None)],
+        })
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for DeleteBucketWebsite<T> {
+impl<T: AsRef<str>, V: AsRef<str>> AwsRequest for DeleteBucketWebsite<T, V> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -60,23 +48,12 @@ impl<T: AsRef<str>> AwsRequest for DeleteBucketWebsite<T> {
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
-        let request = Request::builder()
-            .method(Method::DELETE)
-            .host(url, self.bucket, "", None)?
-            .query_param(QueryParameter::WEBSITE, "")?
-            .payload_hash(None)?
-            .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
-
-        Ok(request.body(HttpBody::empty())?)
+        self.0.into_request(url, access_key, signing_key, region)
     }
 
     fn into_response(
-        mut response: Response<HttpBody>,
+        response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
-        Box::pin(async move {
-            response.error().await?;
-
-            Ok(())
-        })
+        SubResource::<T, V>::into_response(response)
     }
 }

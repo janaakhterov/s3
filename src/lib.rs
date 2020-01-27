@@ -15,6 +15,7 @@ pub(crate) use crate::{
         QueryParam,
         QueryParameter,
     },
+    request::sub_resource::SubResource,
     sign_request::SignRequest,
     signing_key::SigningKey,
 };
