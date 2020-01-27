@@ -38,7 +38,11 @@ pub use crate::{
                 website::DeleteBucketWebsite,
                 DeleteBucket,
             },
-            object::DeleteObject,
+            object::{
+                tagging::DeleteObjectTagging,
+                DeleteObject,
+            },
+            public_access_block::DeletePublicAccessBlock,
         },
         get_object::GetObject,
         list_buckets::ListBuckets,
