@@ -19,7 +19,13 @@ use url::Url;
 #[derive(Debug, Deserialize)]
 pub struct GetBucketAccelerateConfigOutput {
     #[serde(rename = "Status")]
-    status: String
+    status: Status
+}
+
+#[derive(Debug, Deserialize)]
+pub enum Status {
+    Enabled,
+    Suspended,
 }
 
 pub struct GetBucketAccelerateConfig<'a, T: AsRef<str>,>(SubResource<'a, T>);
@@ -37,7 +43,7 @@ impl<'a, T: AsRef<str>,> GetBucketAccelerateConfig<'a, T> {
 }
 
 impl<'a, T: AsRef<str>,> AwsRequest for GetBucketAccelerateConfig<'a, T> {
-    type Response = ();
+    type Response = Option<Status>;
 
     fn into_request<AR: AsRef<str>>(
         self,
@@ -54,13 +60,14 @@ impl<'a, T: AsRef<str>,> AwsRequest for GetBucketAccelerateConfig<'a, T> {
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
             let bytes = SubResource::<'a, T>::into_response(response).await?;
-            let string = String::from_utf8_lossy(&bytes);
+            if !bytes.is_empty() {
+                let string = String::from_utf8_lossy(&bytes);
 
-            let resp: GetBucketAccelerateConfigOutput = quick_xml::de::from_str(&string)?;
-
-            println!("{:#?}", resp);
-
-            Ok(())
+                let resp: GetBucketAccelerateConfigOutput = quick_xml::de::from_str(&string)?;
+                Ok(Some(resp.status))
+            } else {
+                Ok(None)
+            }
         })
     }
 }

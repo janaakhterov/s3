@@ -24,6 +24,7 @@ impl QueryParameter {
     pub const VERSION_ID: &'static str = "VersionId";
     pub const PUBLIC_ACCESS_BLOCK: &'static str = "publicAccessBlock";
     pub const ACCELERATE: &'static str = "accelerate";
+    pub const ACL: &'static str = "acl";
     pub const ID: &'static str = "Id";
 }
 
@@ -86,13 +87,13 @@ where
 
 impl IntoQueryParams for &'_ str {
     fn into_query_params(self) -> String {
-        format!("?{}", self)
+        format!("?{}=", self)
     }
 }
 
 impl IntoQueryParams for &String {
     fn into_query_params(self) -> String {
-        format!("?{}", self)
+        format!("?{}=", self)
     }
 }
 
@@ -109,7 +110,7 @@ where
                     if let Some(value) = value {
                         format!("{}={}", key.as_ref(), value.as_ref())
                     } else {
-                        format!("{}", key.as_ref())
+                        format!("{}=", key.as_ref())
                     }
                 })
                 .collect::<Vec<String>>()

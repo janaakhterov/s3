@@ -7,18 +7,44 @@ use http::{
     request::Builder,
     Error,
 };
+use serde::Deserialize;
+use std::convert::TryFrom;
 
-pub(crate) enum GrantValue {
+pub(crate) enum Grantee {
     Email,
     Id,
     Uri,
 }
 
-pub(crate) enum GrantType {
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename = "Permission")]
+#[serde(try_from = "String")]
+pub(crate) enum Permission {
     Read,
     WriteAcp,
     ReadAcp,
     FullControl,
+}
+
+static PERMISSIONS: [&'static str; 4] = ["READ", "WRITE_ACL", "READ_ACP", "FULL_CONTROL"];
+
+// Required to correctly deserialize
+impl TryFrom<String> for Permission
+where
+    Self: Sized,
+{
+    type Error = serde::de::value::Error;
+
+    fn try_from(value: String) -> Result<Permission, serde::de::value::Error> {
+        match value.as_str() {
+            "READ" => Ok(Permission::Read),
+            "WRITE_ACP" => Ok(Permission::WriteAcp),
+            "READ_ACP" => Ok(Permission::ReadAcp),
+            "FULL_CONTROL" => Ok(Permission::FullControl),
+            value => Err(serde::de::Error::unknown_variant(value, &PERMISSIONS[..])),
+        }
+    }
 }
 
 pub(crate) struct Grants {
@@ -28,12 +54,12 @@ pub(crate) struct Grants {
     pub(crate) full_control: Option<String>,
 }
 
-impl Into<&'static str> for GrantValue {
+impl Into<&'static str> for Grantee {
     fn into(self) -> &'static str {
         match self {
-            GrantValue::Email => "emailAddress",
-            GrantValue::Id => "id",
-            GrantValue::Uri => "uri",
+            Grantee::Email => "emailAddress",
+            Grantee::Id => "id",
+            Grantee::Uri => "uri",
         }
     }
 }
@@ -42,7 +68,7 @@ pub(crate) trait IntoGrants {
     fn into_grants(self) -> Grants;
 }
 
-impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
+impl<T: AsRef<str>> Into<Grants> for Vec<(Permission, Grantee, T)> {
     fn into(self) -> Grants {
         let mut read = Vec::new();
         let mut write_acp = Vec::new();
@@ -54,10 +80,10 @@ impl<T: AsRef<str>> Into<Grants> for Vec<(GrantType, GrantValue, T)> {
             let value = format!(r#"{}="{}""#, value_type, value.as_ref());
 
             match grant_type {
-                GrantType::Read => read.push(value),
-                GrantType::WriteAcp => write_acp.push(value),
-                GrantType::ReadAcp => read_acp.push(value),
-                GrantType::FullControl => full_control.push(value),
+                Permission::Read => read.push(value),
+                Permission::WriteAcp => write_acp.push(value),
+                Permission::ReadAcp => read_acp.push(value),
+                Permission::FullControl => full_control.push(value),
             }
         }
 
@@ -98,7 +124,7 @@ pub(crate) trait OptionalGrants {
     fn optional_grants<T: AsRef<str>>(
         self,
         acl: Option<Acl>,
-        grants: Vec<(GrantType, GrantValue, T)>,
+        grants: Vec<(Permission, Grantee, T)>,
     ) -> Result<Self, Error>
     where
         Self: Sized;
@@ -108,7 +134,7 @@ impl OptionalGrants for Builder {
     fn optional_grants<T: AsRef<str>>(
         self,
         acl: Option<Acl>,
-        grants: Vec<(GrantType, GrantValue, T)>,
+        grants: Vec<(Permission, Grantee, T)>,
     ) -> Result<Self, Error>
     where
         Self: Sized,

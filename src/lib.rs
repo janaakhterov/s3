@@ -3,8 +3,8 @@ pub(crate) use crate::{
     aws_response::AwsResponse,
     gmt::Gmt,
     grant::{
-        GrantType,
-        GrantValue,
+        Permission,
+        Grantee,
         OptionalGrants,
     },
     headers::Headers,
@@ -45,7 +45,10 @@ pub use crate::{
             public_access_block::DeletePublicAccessBlock,
         },
         get::{
-            bucket::accelerate_config::GetBucketAccelerateConfig,
+            bucket::{
+                accelerate_config::GetBucketAccelerateConfig,
+                acl::GetBucketAcl,
+            },
             object::GetObject,
         },
         list_buckets::ListBuckets,

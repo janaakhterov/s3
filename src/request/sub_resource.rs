@@ -12,7 +12,6 @@ use crate::{
 };
 use futures_core::future::BoxFuture;
 use http::method::Method;
-use http_body::Body;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -57,14 +56,7 @@ impl<'a, T: AsRef<str>,> AwsRequest for SubResource<'a, T> {
         mut response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            response.error().await?;
-
-            let mut bytes: Vec<u8> = Vec::new();
-
-            while let Some(next) = response.data().await {
-                let chunk = next?;
-                bytes.extend_from_slice(&chunk);
-            }
+            let bytes = response.error().await?;
 
             Ok(bytes)
         })

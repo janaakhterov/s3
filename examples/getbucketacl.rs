@@ -2,7 +2,7 @@ extern crate s3;
 
 use s3::{
     client::Client,
-    DeleteBucketInventoryConfig,
+    GetBucketAcl,
 };
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
@@ -19,10 +19,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .build()?;
 
     let resp = client
-        .send(
-            // Method unimplemented for Min.io
-            DeleteBucketInventoryConfig::new("imageapi", "list1"),
-        )
+        .send(GetBucketAcl::new("test"))
         .await?;
 
     println!("{:#?}", resp);

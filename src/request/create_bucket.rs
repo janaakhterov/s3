@@ -3,8 +3,8 @@ use crate::{
     AwsRequest,
     AwsResponse,
     Error,
-    GrantType,
-    GrantValue,
+    Permission,
+    Grantee,
     Headers,
     Host,
     OptionalGrants,
@@ -52,7 +52,7 @@ pub struct CreateBucket<T: AsRef<str>> {
     /// The name of the bucket to create.
     pub bucket: T,
 
-    grants: Vec<(GrantType, GrantValue, T)>,
+    grants: Vec<(Permission, Grantee, T)>,
     acl: Option<Acl>,
     location: Option<Region>,
 }
@@ -84,79 +84,79 @@ impl<T: AsRef<str>> CreateBucket<T> {
     /// Allows grantee email to read the object data and its metadata.
     pub fn grant_read_email(mut self, email: T) -> Self {
         self.grants
-            .push((GrantType::Read, GrantValue::Email, email));
+            .push((Permission::Read, Grantee::Email, email));
         self
     }
 
     /// Allows grantee id to read the object data and its metadata.
     pub fn grant_read_id(mut self, id: T) -> Self {
-        self.grants.push((GrantType::Read, GrantValue::Id, id));
+        self.grants.push((Permission::Read, Grantee::Id, id));
         self
     }
 
     /// Allows uri to read the object data and its metadata.
     pub fn grant_read_uri(mut self, uri: T) -> Self {
-        self.grants.push((GrantType::Read, GrantValue::Uri, uri));
+        self.grants.push((Permission::Read, Grantee::Uri, uri));
         self
     }
 
     /// Allows grantee email to write the ACL for the applicable object.
     pub fn grant_write_acp_email(mut self, email: T) -> Self {
         self.grants
-            .push((GrantType::WriteAcp, GrantValue::Email, email));
+            .push((Permission::WriteAcp, Grantee::Email, email));
         self
     }
 
     /// Allows grantee id to write the ACL for the applicable object.
     pub fn grant_write_acp_id(mut self, id: T) -> Self {
-        self.grants.push((GrantType::WriteAcp, GrantValue::Id, id));
+        self.grants.push((Permission::WriteAcp, Grantee::Id, id));
         self
     }
 
     /// Allows grantee uri to write the ACL for the applicable object.
     pub fn grant_write_acp_uri(mut self, uri: T) -> Self {
         self.grants
-            .push((GrantType::WriteAcp, GrantValue::Uri, uri));
+            .push((Permission::WriteAcp, Grantee::Uri, uri));
         self
     }
 
     /// Allows grantee email to read the object ACL.
     pub fn grant_read_acp_email(mut self, email: T) -> Self {
         self.grants
-            .push((GrantType::ReadAcp, GrantValue::Email, email));
+            .push((Permission::ReadAcp, Grantee::Email, email));
         self
     }
 
     /// Allows grantee id to read the object ACL.
     pub fn grant_read_acp_id(mut self, id: T) -> Self {
-        self.grants.push((GrantType::ReadAcp, GrantValue::Id, id));
+        self.grants.push((Permission::ReadAcp, Grantee::Id, id));
         self
     }
 
     /// Allows uri to read the object ACL.
     pub fn grant_read_acp_uri(mut self, uri: T) -> Self {
-        self.grants.push((GrantType::ReadAcp, GrantValue::Uri, uri));
+        self.grants.push((Permission::ReadAcp, Grantee::Uri, uri));
         self
     }
 
     /// Gives the grantee email READ, READ_ACP, and WRITE_ACP permissions on the object.
     pub fn grant_full_email(mut self, email: T) -> Self {
         self.grants
-            .push((GrantType::FullControl, GrantValue::Email, email));
+            .push((Permission::FullControl, Grantee::Email, email));
         self
     }
 
     /// Gives the grantee id READ, READ_ACP, and WRITE_ACP permissions on the object.
     pub fn grant_full_id(mut self, id: T) -> Self {
         self.grants
-            .push((GrantType::FullControl, GrantValue::Id, id));
+            .push((Permission::FullControl, Grantee::Id, id));
         self
     }
 
     /// Gives the uri READ, READ_ACP, and WRITE_ACP permissions on the object.
     pub fn grant_full_uri(mut self, uri: T) -> Self {
         self.grants
-            .push((GrantType::FullControl, GrantValue::Uri, uri));
+            .push((Permission::FullControl, Grantee::Uri, uri));
         self
     }
 }

@@ -15,7 +15,6 @@ use chrono::{
 };
 use futures_core::future::BoxFuture;
 use http::method::Method;
-use http_body::Body;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -34,12 +33,12 @@ const HEADERS: [&str; 3] = [
 ];
 
 #[derive(Debug, Deserialize)]
-struct Owner {
+pub(super) struct Owner {
     #[serde(rename = "ID")]
-    pub id: String,
+    pub(super) id: Option<String>,
 
     #[serde(rename = "DisplayName")]
-    pub display_name: String,
+    pub(super) display_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,15 +89,7 @@ impl AwsRequest for ListBuckets {
         mut response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            response.error().await?;
-
-            let mut bytes: Vec<u8> = Vec::new();
-
-            while let Some(next) = response.data().await {
-                let chunk = next?;
-                bytes.extend_from_slice(&chunk);
-            }
-
+            let bytes = response.error().await?;
             let results = String::from_utf8_lossy(&bytes);
             let results: ListBucketsResponse = quick_xml::de::from_str(&results)?;
 
