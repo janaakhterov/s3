@@ -3,9 +3,9 @@ pub(crate) use crate::{
     aws_response::AwsResponse,
     gmt::Gmt,
     grant::{
-        Permission,
         Grantee,
         OptionalGrants,
+        Permission,
     },
     headers::Headers,
     host::Host,
@@ -48,6 +48,7 @@ pub use crate::{
             bucket::{
                 accelerate_config::GetBucketAccelerateConfig,
                 acl::GetBucketAcl,
+                analytics_config::GetBucketAnalyticsConfig,
             },
             object::GetObject,
         },
@@ -75,6 +76,7 @@ mod request;
 mod sign_request;
 mod signing_key;
 mod storage_class;
+mod types;
 
 #[cfg(feature = "credential_file")]
 mod parser;

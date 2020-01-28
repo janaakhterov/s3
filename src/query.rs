@@ -25,7 +25,8 @@ impl QueryParameter {
     pub const PUBLIC_ACCESS_BLOCK: &'static str = "publicAccessBlock";
     pub const ACCELERATE: &'static str = "accelerate";
     pub const ACL: &'static str = "acl";
-    pub const ID: &'static str = "Id";
+    pub const ANALYTICS: &'static str = "analytics";
+    pub const ID: &'static str = "id";
 }
 
 pub trait QueryParam {
