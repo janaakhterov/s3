@@ -1,6 +1,6 @@
 /// The CacheControl header used to determine how an object is to be cached.
 /// For more information go to [rfc2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9)
-pub enum CacheControl<T: AsRef<str>> {
+pub enum CacheControl<'a> {
     NoCache,
     NoStore,
     MaxAge(u64),
@@ -9,14 +9,14 @@ pub enum CacheControl<T: AsRef<str>> {
     NoTransform,
     OnlyIfCached,
     Public,
-    Private(Option<T>),
+    Private(Option<&'a str>),
     MustRevalidate,
     ProxyRevalidate,
     SMaxAge(u64),
-    Extension(T),
+    Extension(&'a str),
 }
 
-impl<T: AsRef<str>> Into<String> for CacheControl<T> {
+impl<'a> Into<String> for CacheControl<'a> {
     fn into(self) -> String {
         let cache = match self {
             CacheControl::NoCache => "no-cache".to_owned(),
@@ -35,7 +35,7 @@ impl<T: AsRef<str>> Into<String> for CacheControl<T> {
             CacheControl::Public => return "public".to_owned(),
             CacheControl::Private(value) => {
                 if let Some(value) = value {
-                    format!("private={}", value.as_ref())
+                    format!("private={}", value)
                 } else {
                     "private".to_owned()
                 }
@@ -43,7 +43,7 @@ impl<T: AsRef<str>> Into<String> for CacheControl<T> {
             CacheControl::MustRevalidate => return "must-revalidate".to_owned(),
             CacheControl::ProxyRevalidate => return "proxy-revalidate".to_owned(),
             CacheControl::SMaxAge(value) => return format!("s-maxage={}", value),
-            CacheControl::Extension(value) => return value.as_ref().to_owned(),
+            CacheControl::Extension(value) => return value.to_owned(),
         };
 
         format!("CacheControl:{}", cache)

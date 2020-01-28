@@ -48,12 +48,12 @@ struct Rule {
     kms_key: Option<String>,
 }
 
-pub enum AwsEncryption<T: AsRef<str>> {
+pub enum AwsEncryption<'a> {
     Sse,
-    Kms(T),
+    Kms(&'a str),
 }
 
-impl<T: AsRef<str>> Into<&'static str> for AwsEncryption<T> {
+impl<'a> Into<&'static str> for AwsEncryption<'a> {
     fn into(self) -> &'static str {
         match self {
             AwsEncryption::Sse => "AES256",
@@ -62,16 +62,16 @@ impl<T: AsRef<str>> Into<&'static str> for AwsEncryption<T> {
     }
 }
 
-pub struct PutBucketEncryption<T: AsRef<str>> {
+pub struct PutBucketEncryption<'a> {
     /// Bucket name to which the PUT operation was initiated.
-    pub bucket: T,
+    pub bucket: &'a str,
 
-    encryption: Option<AwsEncryption<T>>,
+    encryption: Option<AwsEncryption<'a>>,
 }
 
-impl<T: AsRef<str>> PutBucketEncryption<T> {
+impl<'a> PutBucketEncryption<'a> {
     /// Create a new PutBucketEncryption request with default parameters
-    pub fn new(bucket: T) -> Self {
+    pub fn new(bucket: &'a str) -> Self {
         PutBucketEncryption {
             bucket,
             encryption: None,
@@ -83,13 +83,13 @@ impl<T: AsRef<str>> PutBucketEncryption<T> {
         self
     }
 
-    pub fn encrypt_with_kms(mut self, key: T) -> Self {
+    pub fn encrypt_with_kms(mut self, key: &'a str) -> Self {
         self.encryption = Some(AwsEncryption::Kms(key));
         self
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for PutBucketEncryption<T> {
+impl<'a> AwsRequest for PutBucketEncryption<'a> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -105,15 +105,13 @@ impl<T: AsRef<str>> AwsRequest for PutBucketEncryption<T> {
 
         if let Some(encryption) = self.encryption {
             if let AwsEncryption::Kms(ref key) = encryption {
-                config.rule.kms_key = Some(key.as_ref().to_string());
+                config.rule.kms_key = Some(key.to_string());
             }
             let s: &'static str = encryption.into();
             config.rule.sse = Some(s.to_owned());
         }
 
         let payload = quick_xml::se::to_string(&config)?;
-
-        println!("{}", payload);
 
         let content_md5 = base64::encode(&*md5::compute(&payload));
 

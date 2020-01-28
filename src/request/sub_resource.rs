@@ -25,14 +25,14 @@ const HEADERS: [&str; 3] = [
     Headers::X_AMZ_DATE,
 ];
 
-pub(crate) struct SubResource<'a, T: AsRef<str>,> {
-    pub(crate) bucket: T,
+pub(crate) struct SubResource<'a> {
+    pub(crate) bucket: &'a str,
     pub(crate) method: Method,
     pub(crate) key: Option<&'a str>,
     pub(crate) params: Vec<(&'static str, Option<&'a str>)>,
 }
 
-impl<'a, T: AsRef<str>,> AwsRequest for SubResource<'a, T> {
+impl<'a> AwsRequest for SubResource<'a> {
     type Response = Vec<u8>;
 
     fn into_request<AR: AsRef<str>>(

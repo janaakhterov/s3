@@ -48,18 +48,18 @@ pub struct CreateBucketConfiguration {
     location_constraint: Option<String>,
 }
 
-pub struct CreateBucket<T: AsRef<str>> {
+pub struct CreateBucket<'a> {
     /// The name of the bucket to create.
-    pub bucket: T,
+    pub bucket: &'a str,
 
-    grants: Vec<(Permission, Grantee, T)>,
+    grants: Vec<(Permission, Grantee, &'a str)>,
     acl: Option<Acl>,
     location: Option<Region>,
 }
 
-impl<T: AsRef<str>> CreateBucket<T> {
+impl<'a> CreateBucket<'a> {
     /// Create a new CreateBucket request with the given bucket name.
-    pub fn new(bucket: T) -> Self {
+    pub fn new(bucket: &'a str) -> Self {
         CreateBucket {
             bucket,
             grants: Vec::new(),
@@ -80,88 +80,9 @@ impl<T: AsRef<str>> CreateBucket<T> {
         self.acl = Some(acl);
         self
     }
-
-    /// Allows grantee email to read the object data and its metadata.
-    pub fn grant_read_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::Read, Grantee::Email, email));
-        self
-    }
-
-    /// Allows grantee id to read the object data and its metadata.
-    pub fn grant_read_id(mut self, id: T) -> Self {
-        self.grants.push((Permission::Read, Grantee::Id, id));
-        self
-    }
-
-    /// Allows uri to read the object data and its metadata.
-    pub fn grant_read_uri(mut self, uri: T) -> Self {
-        self.grants.push((Permission::Read, Grantee::Uri, uri));
-        self
-    }
-
-    /// Allows grantee email to write the ACL for the applicable object.
-    pub fn grant_write_acp_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::WriteAcp, Grantee::Email, email));
-        self
-    }
-
-    /// Allows grantee id to write the ACL for the applicable object.
-    pub fn grant_write_acp_id(mut self, id: T) -> Self {
-        self.grants.push((Permission::WriteAcp, Grantee::Id, id));
-        self
-    }
-
-    /// Allows grantee uri to write the ACL for the applicable object.
-    pub fn grant_write_acp_uri(mut self, uri: T) -> Self {
-        self.grants
-            .push((Permission::WriteAcp, Grantee::Uri, uri));
-        self
-    }
-
-    /// Allows grantee email to read the object ACL.
-    pub fn grant_read_acp_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::ReadAcp, Grantee::Email, email));
-        self
-    }
-
-    /// Allows grantee id to read the object ACL.
-    pub fn grant_read_acp_id(mut self, id: T) -> Self {
-        self.grants.push((Permission::ReadAcp, Grantee::Id, id));
-        self
-    }
-
-    /// Allows uri to read the object ACL.
-    pub fn grant_read_acp_uri(mut self, uri: T) -> Self {
-        self.grants.push((Permission::ReadAcp, Grantee::Uri, uri));
-        self
-    }
-
-    /// Gives the grantee email READ, READ_ACP, and WRITE_ACP permissions on the object.
-    pub fn grant_full_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::FullControl, Grantee::Email, email));
-        self
-    }
-
-    /// Gives the grantee id READ, READ_ACP, and WRITE_ACP permissions on the object.
-    pub fn grant_full_id(mut self, id: T) -> Self {
-        self.grants
-            .push((Permission::FullControl, Grantee::Id, id));
-        self
-    }
-
-    /// Gives the uri READ, READ_ACP, and WRITE_ACP permissions on the object.
-    pub fn grant_full_uri(mut self, uri: T) -> Self {
-        self.grants
-            .push((Permission::FullControl, Grantee::Uri, uri));
-        self
-    }
 }
 
-impl<T: AsRef<str>> AwsRequest for CreateBucket<T> {
+impl<'a> AwsRequest for CreateBucket<'a> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -206,3 +127,30 @@ impl<T: AsRef<str>> AwsRequest for CreateBucket<T> {
         })
     }
 }
+
+macro_rules! grant_method {
+    ($ty: ty, $fn: ident, $permission: ident, $grantee: ident) => {
+        impl<'a> $ty {
+            pub fn $fn(mut self, value: &'a str) -> Self {
+                self.grants
+                    .push((Permission::$permission, Grantee::$grantee, value));
+                self
+            }
+        }
+    };
+}
+
+grant_method!(CreateBucket<'a>, grant_read_id, WriteAcp, Id);
+grant_method!(CreateBucket<'a>, grant_read_acp_id, ReadAcp, Id);
+grant_method!(CreateBucket<'a>, grant_write_acp_id, Read, Id);
+grant_method!(CreateBucket<'a>, grant_full_id, FullControl, Id);
+
+grant_method!(CreateBucket<'a>, grant_read_email, WriteAcp, Email);
+grant_method!(CreateBucket<'a>, grant_read_acp_email, ReadAcp, Email);
+grant_method!(CreateBucket<'a>, grant_write_acp_email, Read, Email);
+grant_method!(CreateBucket<'a>, grant_full_email, FullControl, Email);
+
+grant_method!(CreateBucket<'a>, grant_read_uri, WriteAcp, Uri);
+grant_method!(CreateBucket<'a>, grant_read_acp_uri, ReadAcp, Uri);
+grant_method!(CreateBucket<'a>, grant_write_acp_uri, Read, Uri);
+grant_method!(CreateBucket<'a>, grant_full_uri, FullControl, Uri);

@@ -15,11 +15,11 @@ use hyper::{
 };
 use url::Url;
 
-pub struct DeleteBucketTagging<'a, T: AsRef<str>,>(SubResource<'a, T>);
+pub struct DeleteBucketTagging<'a>(SubResource<'a>);
 
-impl<'a, T: AsRef<str>,> DeleteBucketTagging<'a, T> {
+impl<'a> DeleteBucketTagging<'a> {
     /// Create a new DeleteBucketTagging request with default parameters
-    pub fn new(bucket: T) -> Self {
+    pub fn new(bucket: &'a str) -> Self {
         DeleteBucketTagging(SubResource {
             bucket,
             method: Method::DELETE,
@@ -29,7 +29,7 @@ impl<'a, T: AsRef<str>,> DeleteBucketTagging<'a, T> {
     }
 }
 
-impl<'a, T: AsRef<str>,> AwsRequest for DeleteBucketTagging<'a, T> {
+impl<'a> AwsRequest for DeleteBucketTagging<'a> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -46,7 +46,7 @@ impl<'a, T: AsRef<str>,> AwsRequest for DeleteBucketTagging<'a, T> {
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            SubResource::<'a, T>::into_response(response).await?;
+            SubResource::<'a>::into_response(response).await?;
 
             Ok(())
         })

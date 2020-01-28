@@ -64,17 +64,17 @@ pub(super) const HEADERS: [&str; 20] = [
 // of the get request will become optional if any of the `if_*`
 // options are set. Otherwise, the request will always return a
 // value or an error.
-pub struct GetObject<T: AsRef<str>, R: FromGetObjectResponse> {
+pub struct GetObject<'a, R: FromGetObjectResponse> {
     /// The bucket name containing the object.
-    pub bucket: T,
+    pub bucket: &'a str,
     /// Key of the object to get.
-    pub key: T,
-    if_match: Option<T>,
+    pub key: &'a str,
+    if_match: Option<&'a str>,
     if_modified_since: Option<DateTime<Utc>>,
-    if_none_match: Option<T>,
+    if_none_match: Option<&'a str>,
     if_unmodified_since: Option<DateTime<Utc>>,
     range: Option<String>,
-    version_id: Option<T>,
+    version_id: Option<&'a str>,
     _phantom: PhantomData<R>,
 }
 
@@ -91,10 +91,10 @@ pub struct GetObject<T: AsRef<str>, R: FromGetObjectResponse> {
 // pub sse_customer_key: Option<T>,
 // pub sse_customer_key_md5: Option<T>,
 
-impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
+impl<'a> GetObject<'a, GetObjectResponse> {
     /// Create a new GetObject request with default parameters and non-optional
     /// response type.
-    pub fn new(bucket: T, key: T) -> GetObject<T, GetObjectResponse> {
+    pub fn new(bucket: &'a str, key: &'a str) -> GetObject<'a, GetObjectResponse> {
         GetObject {
             bucket,
             key,
@@ -110,7 +110,7 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
 
     /// Return the object only if its entity tag (ETag) is the same as the one specified, otherwise return a 412 (precondition failed).
     /// **Note:** This changes the response type of from `GetObjectResponse` to `Option<GetObjectResponse>`
-    pub fn if_match(self, etag: T) -> GetObject<T, Option<GetObjectResponse>> {
+    pub fn if_match(self, etag: &'a str) -> GetObject<'a, Option<GetObjectResponse>> {
         GetObject {
             bucket: self.bucket,
             key: self.key,
@@ -129,7 +129,7 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
     pub fn if_modified_since(
         self,
         since: DateTime<Utc>,
-    ) -> GetObject<T, Option<GetObjectResponse>> {
+    ) -> GetObject<'a, Option<GetObjectResponse>> {
         GetObject {
             bucket: self.bucket,
             key: self.key,
@@ -145,7 +145,7 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
 
     /// Return the object only if its entity tag (ETag) is different from the one specified, otherwise return a 304 (not modified).
     /// **Note:** This changes the response type of from `GetObjectResponse` to `Option<GetObjectResponse>`
-    pub fn if_none_match(self, etag: T) -> GetObject<T, Option<GetObjectResponse>> {
+    pub fn if_none_match(self, etag: &'a str) -> GetObject<'a, Option<GetObjectResponse>> {
         GetObject {
             bucket: self.bucket,
             key: self.key,
@@ -164,7 +164,7 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
     pub fn if_unmodified_since(
         self,
         since: DateTime<Utc>,
-    ) -> GetObject<T, Option<GetObjectResponse>> {
+    ) -> GetObject<'a, Option<GetObjectResponse>> {
         GetObject {
             bucket: self.bucket,
             key: self.key,
@@ -185,13 +185,13 @@ impl<T: AsRef<str>> GetObject<T, GetObjectResponse> {
     }
 
     /// VersionId used to reference a specific version of the object.
-    pub fn version_id(mut self, version_id: T) -> Self {
+    pub fn version_id(mut self, version_id: &'a str) -> Self {
         self.version_id = Some(version_id);
         self
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
+impl<'a> AwsRequest for GetObject<'a, GetObjectResponse> {
     type Response = GetObjectResponse;
 
     fn into_request<AR: AsRef<str>>(
@@ -229,7 +229,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, GetObjectResponse> {
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for GetObject<T, Option<GetObjectResponse>> {
+impl<'a> AwsRequest for GetObject<'a, Option<GetObjectResponse>> {
     type Response = Option<GetObjectResponse>;
 
     fn into_request<AR: AsRef<str>>(
@@ -239,7 +239,7 @@ impl<T: AsRef<str>> AwsRequest for GetObject<T, Option<GetObjectResponse>> {
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
-        <GetObject<T, GetObjectResponse> as AwsRequest>::into_request(
+        <GetObject<GetObjectResponse> as AwsRequest>::into_request(
             GetObject {
                 bucket: self.bucket,
                 key: self.key,

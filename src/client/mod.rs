@@ -117,7 +117,7 @@ impl Client {
     ///
     /// Note: If more control is needed over the request parameters use the
     /// `Client::send()` method directly
-    pub async fn get<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<GetObjectResponse, Error> {
+    pub async fn get<'a>(&self, bucket: &'a str, key: &'a str) -> Result<GetObjectResponse, Error> {
         let request = GetObject::new(bucket, key);
         self.send(request).await
     }
@@ -126,10 +126,10 @@ impl Client {
     ///
     /// Note: If more control is needed over the request parameters use the
     /// `Client::send()` method directly
-    pub async fn put<T: AsRef<str>>(
+    pub async fn put<'a>(
         &self,
-        bucket: T,
-        key: T,
+        bucket: &'a str,
+        key: &'a str,
         contents: Vec<u8>,
     ) -> Result<String, Error> {
         let request = PutObject::new(bucket, key, contents);
@@ -140,7 +140,7 @@ impl Client {
     ///
     /// Note: If more control is needed over the request parameters use the
     /// `Client::send()` method directly
-    pub async fn delete<T: AsRef<str>>(&self, bucket: T, key: T) -> Result<bool, Error> {
+    pub async fn delete<'a>(&self, bucket: &'a str, key: &'a str) -> Result<bool, Error> {
         let request = DeleteObject::new(bucket, key);
         self.send(request).await
     }
@@ -149,7 +149,7 @@ impl Client {
     ///
     /// Note: If more control is needed over the request parameters use the
     /// `Client::send()` method directly
-    pub async fn create<T: AsRef<str>>(&self, bucket: T) -> Result<(), Error> {
+    pub async fn create<'a>(&self, bucket: &'a str) -> Result<(), Error> {
         let request = CreateBucket::new(bucket);
         self.send(request).await
     }

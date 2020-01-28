@@ -29,22 +29,22 @@ const HEADERS: [&str; 3] = [
     Headers::X_AMZ_DATE,
 ];
 
-pub struct DeleteObject<T: AsRef<str>> {
+pub struct DeleteObject<'a> {
     /// The bucket name of the bucket containing the object.
-    pub bucket: T,
+    pub bucket: &'a str,
 
     /// Key name of the object to delete.
-    pub key: T,
+    pub key: &'a str,
 }
 
-impl<T: AsRef<str>> DeleteObject<T> {
+impl<'a> DeleteObject<'a> {
     /// Creates a new DeleteObject request with the given bucket and key
-    pub fn new(bucket: T, key: T) -> Self {
+    pub fn new(bucket: &'a str, key: &'a str) -> Self {
         DeleteObject { bucket, key }
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for DeleteObject<T> {
+impl<'a> AwsRequest for DeleteObject<'a> {
     type Response = bool;
 
     fn into_request<AR: AsRef<str>>(

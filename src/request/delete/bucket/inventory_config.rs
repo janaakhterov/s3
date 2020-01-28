@@ -15,11 +15,11 @@ use hyper::{
 };
 use url::Url;
 
-pub struct DeleteBucketInventoryConfig<'a, T: AsRef<str>,>(SubResource<'a, T>);
+pub struct DeleteBucketInventoryConfig<'a>(SubResource<'a>);
 
-impl<'a, T: AsRef<str>,> DeleteBucketInventoryConfig<'a, T> {
+impl<'a> DeleteBucketInventoryConfig<'a> {
     /// Create a new DeleteBucketInventoryConfig request with default parameters
-    pub fn new(bucket: T, inventory_id: &'a str) -> Self {
+    pub fn new(bucket: &'a str, inventory_id: &'a str) -> Self {
         DeleteBucketInventoryConfig(SubResource {
             bucket,
             method: Method::DELETE,
@@ -32,7 +32,7 @@ impl<'a, T: AsRef<str>,> DeleteBucketInventoryConfig<'a, T> {
     }
 }
 
-impl<'a, T: AsRef<str>,> AwsRequest for DeleteBucketInventoryConfig<'a, T> {
+impl<'a> AwsRequest for DeleteBucketInventoryConfig<'a> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
@@ -49,7 +49,7 @@ impl<'a, T: AsRef<str>,> AwsRequest for DeleteBucketInventoryConfig<'a, T> {
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            SubResource::<'a, T>::into_response(response).await?;
+            SubResource::<'a>::into_response(response).await?;
 
             Ok(())
         })

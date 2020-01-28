@@ -49,23 +49,23 @@ const HEADERS: [&str; 11] = [
     Headers::X_AMZ_GRANT_FULL_CONTROL,
 ];
 
-pub struct PutObject<T: AsRef<str>> {
+pub struct PutObject<'a> {
     /// Bucket name to which the PUT operation was initiated.
-    pub bucket: T,
+    pub bucket: &'a str,
 
     /// Object key for which the PUT operation was initiated.
-    pub key: T,
+    pub key: &'a str,
 
     contents: Vec<u8>,
     expires: Option<DateTime<Utc>>,
-    grants: Vec<(Permission, Grantee, T)>,
-    cache: Option<CacheControl<T>>,
+    grants: Vec<(Permission, Grantee, &'a str)>,
+    cache: Option<CacheControl<'a>>,
     acl: Option<Acl>,
 }
 
-impl<T: AsRef<str>> PutObject<T> {
+impl<'a> PutObject<'a> {
     /// Create a new PutObject request with default parameters
-    pub fn new(bucket: T, key: T, contents: Vec<u8>) -> Self {
+    pub fn new(bucket: &'a str, key: &'a str, contents: Vec<u8>) -> Self {
         PutObject {
             bucket,
             key,
@@ -84,7 +84,7 @@ impl<T: AsRef<str>> PutObject<T> {
     }
 
     /// Can be used to specify caching behavior along the request/reply chain.
-    pub fn cache(mut self, cache: CacheControl<T>) -> Self {
+    pub fn cache(mut self, cache: CacheControl<'a>) -> Self {
         self.cache = Some(cache);
         self
     }
@@ -95,88 +95,9 @@ impl<T: AsRef<str>> PutObject<T> {
         self.acl = Some(acl);
         self
     }
-
-    /// Allows grantee email to read the object data and its metadata.
-    pub fn grant_read_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::Read, Grantee::Email, email));
-        self
-    }
-
-    /// Allows grantee id to read the object data and its metadata.
-    pub fn grant_read_id(mut self, id: T) -> Self {
-        self.grants.push((Permission::Read, Grantee::Id, id));
-        self
-    }
-
-    /// Allows uri to read the object data and its metadata.
-    pub fn grant_read_uri(mut self, uri: T) -> Self {
-        self.grants.push((Permission::Read, Grantee::Uri, uri));
-        self
-    }
-
-    /// Allows grantee email to write the ACL for the applicable object.
-    pub fn grant_write_acp_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::WriteAcp, Grantee::Email, email));
-        self
-    }
-
-    /// Allows grantee id to write the ACL for the applicable object.
-    pub fn grant_write_acp_id(mut self, id: T) -> Self {
-        self.grants.push((Permission::WriteAcp, Grantee::Id, id));
-        self
-    }
-
-    /// Allows grantee uri to write the ACL for the applicable object.
-    pub fn grant_write_acp_uri(mut self, uri: T) -> Self {
-        self.grants
-            .push((Permission::WriteAcp, Grantee::Uri, uri));
-        self
-    }
-
-    /// Allows grantee email to read the object ACL.
-    pub fn grant_read_acp_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::ReadAcp, Grantee::Email, email));
-        self
-    }
-
-    /// Allows grantee id to read the object ACL.
-    pub fn grant_read_acp_id(mut self, id: T) -> Self {
-        self.grants.push((Permission::ReadAcp, Grantee::Id, id));
-        self
-    }
-
-    /// Allows uri to read the object ACL.
-    pub fn grant_read_acp_uri(mut self, uri: T) -> Self {
-        self.grants.push((Permission::ReadAcp, Grantee::Uri, uri));
-        self
-    }
-
-    /// Gives the grantee email READ, READ_ACP, and WRITE_ACP permissions on the object.
-    pub fn grant_full_email(mut self, email: T) -> Self {
-        self.grants
-            .push((Permission::FullControl, Grantee::Email, email));
-        self
-    }
-
-    /// Gives the grantee id READ, READ_ACP, and WRITE_ACP permissions on the object.
-    pub fn grant_full_id(mut self, id: T) -> Self {
-        self.grants
-            .push((Permission::FullControl, Grantee::Id, id));
-        self
-    }
-
-    /// Gives the uri READ, READ_ACP, and WRITE_ACP permissions on the object.
-    pub fn grant_full_uri(mut self, uri: T) -> Self {
-        self.grants
-            .push((Permission::FullControl, Grantee::Uri, uri));
-        self
-    }
 }
 
-impl<T: AsRef<str>> AwsRequest for PutObject<T> {
+impl<'a> AwsRequest for PutObject<'a> {
     type Response = String;
 
     fn into_request<AR: AsRef<str>>(
@@ -217,3 +138,30 @@ impl<T: AsRef<str>> AwsRequest for PutObject<T> {
         })
     }
 }
+
+macro_rules! grant_method {
+    ($ty: ty, $fn: ident, $permission: ident, $grantee: ident) => {
+        impl<'a> $ty {
+            pub fn $fn(mut self, value: &'a str) -> Self {
+                self.grants
+                    .push((Permission::$permission, Grantee::$grantee, value));
+                self
+            }
+        }
+    };
+}
+
+grant_method!(PutObject<'a>, grant_read_id, WriteAcp, Id);
+grant_method!(PutObject<'a>, grant_read_acp_id, ReadAcp, Id);
+grant_method!(PutObject<'a>, grant_write_acp_id, Read, Id);
+grant_method!(PutObject<'a>, grant_full_id, FullControl, Id);
+
+grant_method!(PutObject<'a>, grant_read_email, WriteAcp, Email);
+grant_method!(PutObject<'a>, grant_read_acp_email, ReadAcp, Email);
+grant_method!(PutObject<'a>, grant_write_acp_email, Read, Email);
+grant_method!(PutObject<'a>, grant_full_email, FullControl, Email);
+
+grant_method!(PutObject<'a>, grant_read_uri, WriteAcp, Uri);
+grant_method!(PutObject<'a>, grant_read_acp_uri, ReadAcp, Uri);
+grant_method!(PutObject<'a>, grant_write_acp_uri, Read, Uri);
+grant_method!(PutObject<'a>, grant_full_uri, FullControl, Uri);

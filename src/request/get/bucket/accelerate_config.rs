@@ -28,11 +28,11 @@ pub enum Status {
     Suspended,
 }
 
-pub struct GetBucketAccelerateConfig<'a, T: AsRef<str>,>(SubResource<'a, T>);
+pub struct GetBucketAccelerateConfig<'a>(SubResource<'a>);
 
-impl<'a, T: AsRef<str>,> GetBucketAccelerateConfig<'a, T> {
+impl<'a> GetBucketAccelerateConfig<'a> {
     /// Create a new GetBucketAccelerateConfig request with default parameters
-    pub fn new(bucket: T) -> Self {
+    pub fn new(bucket: &'a str) -> Self {
         GetBucketAccelerateConfig(SubResource {
             bucket,
             method: Method::GET,
@@ -42,7 +42,7 @@ impl<'a, T: AsRef<str>,> GetBucketAccelerateConfig<'a, T> {
     }
 }
 
-impl<'a, T: AsRef<str>,> AwsRequest for GetBucketAccelerateConfig<'a, T> {
+impl<'a> AwsRequest for GetBucketAccelerateConfig<'a> {
     type Response = Option<Status>;
 
     fn into_request<AR: AsRef<str>>(
@@ -59,7 +59,7 @@ impl<'a, T: AsRef<str>,> AwsRequest for GetBucketAccelerateConfig<'a, T> {
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            let bytes = SubResource::<'a, T>::into_response(response).await?;
+            let bytes = SubResource::<'a>::into_response(response).await?;
             if !bytes.is_empty() {
                 let string = String::from_utf8_lossy(&bytes);
 

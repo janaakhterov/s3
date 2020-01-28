@@ -60,11 +60,11 @@ pub struct Grantee {
     uri: Option<String>,
 }
 
-pub struct GetBucketAcl<'a, T: AsRef<str>,>(SubResource<'a, T>);
+pub struct GetBucketAcl<'a>(SubResource<'a>);
 
-impl<'a, T: AsRef<str>,> GetBucketAcl<'a, T> {
+impl<'a> GetBucketAcl<'a> {
     /// Create a new GetBucketAcl request with default parameters
-    pub fn new(bucket: T) -> Self {
+    pub fn new(bucket: &'a str) -> Self {
         GetBucketAcl(SubResource {
             bucket,
             method: Method::GET,
@@ -74,7 +74,7 @@ impl<'a, T: AsRef<str>,> GetBucketAcl<'a, T> {
     }
 }
 
-impl<'a, T: AsRef<str>,> AwsRequest for GetBucketAcl<'a, T> {
+impl<'a> AwsRequest for GetBucketAcl<'a> {
     type Response = BucketAcl;
 
     fn into_request<AR: AsRef<str>>(
@@ -91,7 +91,7 @@ impl<'a, T: AsRef<str>,> AwsRequest for GetBucketAcl<'a, T> {
         response: Response<HttpBody>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>> {
         Box::pin(async move {
-            let bytes = SubResource::<'a, T>::into_response(response).await?;
+            let bytes = SubResource::<'a>::into_response(response).await?;
             let string = String::from_utf8_lossy(&bytes);
 
             let resp: BucketAcl = quick_xml::de::from_str(&string)?;
