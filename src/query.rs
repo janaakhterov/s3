@@ -26,6 +26,7 @@ impl QueryParameter {
     pub const ACCELERATE: &'static str = "accelerate";
     pub const ACL: &'static str = "acl";
     pub const ANALYTICS: &'static str = "analytics";
+    pub const CORS: &'static str = "cors";
     pub const ID: &'static str = "id";
 }
 
