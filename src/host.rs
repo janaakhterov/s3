@@ -1,5 +1,5 @@
 use crate::{
-    Error,
+    error,
     Headers,
     Region,
 };
@@ -18,7 +18,7 @@ pub trait Host {
         bucket: B,
         key: K,
         region: Option<Region>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self, error::Error>
     where
         Self: Sized;
 }
@@ -30,7 +30,7 @@ impl Host for Builder {
         bucket: B,
         key: K,
         region: Option<Region>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, error::Error> {
         let domain = if bucket.as_ref() != "" {
             format!("{}.{}", bucket.as_ref(), url.domain().unwrap())
         } else {
@@ -53,10 +53,11 @@ impl Host for Builder {
             domain
         };
 
-        let uri = Uri::try_from(&uri)?;
+        let uri = Uri::try_from(&uri).map_err(error::Internal::from)?;
 
-        Ok(self
-            .uri(uri)
-            .header(Headers::HOST, HeaderValue::from_str(&domain)?))
+        Ok(self.uri(uri).header(
+            Headers::HOST,
+            HeaderValue::from_str(&domain).map_err(error::Internal::from)?,
+        ))
     }
 }

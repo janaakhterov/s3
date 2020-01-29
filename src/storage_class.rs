@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::error;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -15,7 +15,7 @@ pub enum StorageClass {
 }
 
 impl FromStr for StorageClass {
-    type Err = Error;
+    type Err = error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -25,7 +25,7 @@ impl FromStr for StorageClass {
             "ONEZONE_IA" => Ok(Self::OnezoneIa),
             "INTELLIGENT_TIERING" => Ok(Self::IntelligentTiering),
             "DEEP_ARCHIVE" => Ok(Self::DeepArchive),
-            _ => Err(Error::ParseStorageClassError),
+            _ => Err(error::Error::from(error::Internal::ParseStorageClassError)),
         }
     }
 }

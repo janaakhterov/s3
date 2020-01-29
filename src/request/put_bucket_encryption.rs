@@ -1,4 +1,5 @@
 use crate::{
+    error,
     AwsRequest,
     AwsResponse,
     Error,
@@ -111,7 +112,7 @@ impl<'a> AwsRequest for PutBucketEncryption<'a> {
             config.rule.sse = Some(s.to_owned());
         }
 
-        let payload = quick_xml::se::to_string(&config)?;
+        let payload = quick_xml::se::to_string(&config).map_err(error::Internal::from)?;
 
         let content_md5 = base64::encode(&*md5::compute(&payload));
 
@@ -119,11 +120,11 @@ impl<'a> AwsRequest for PutBucketEncryption<'a> {
             .method(Method::PUT)
             .host(url, self.bucket, "", Some(region))?
             .query_param(QueryParameter::ENCRYPTION)?
-            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?)
+            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5).map_err(error::Internal::from)?)
             .payload_hash(Some(&payload.as_bytes()))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::from(payload))?)
+        Ok(request.body(HttpBody::from(payload)).map_err(error::Internal::from)?)
     }
 
     fn into_response(

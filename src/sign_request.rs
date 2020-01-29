@@ -1,5 +1,5 @@
 use crate::{
-    Error,
+    error,
     Headers,
     Region,
     SigningKey,
@@ -22,7 +22,7 @@ pub trait SignRequest {
         signing_key: &SigningKey,
         region: Region,
         headers: &'static [&'static str],
-    ) -> Result<Self, Error>
+    ) -> Result<Self, error::Error>
     where
         Self: Sized;
 }
@@ -34,7 +34,7 @@ impl SignRequest for Builder {
         signing_key: &SigningKey,
         region: Region,
         headers: &'static [&'static str],
-    ) -> Result<Self, Error>
+    ) -> Result<Self, error::Error>
     where
         Self: Sized,
     {
@@ -42,7 +42,10 @@ impl SignRequest for Builder {
         // Formatting date in rfc1123 was rejected by minio even though it says to use that format
         // instead using format from aws examples YYYYMMDDTHHMMSSZ
         let date = &format!("{}", Utc::now().format("%Y%m%dT%H%M%SZ"));
-        self = self.header(Headers::X_AMZ_DATE, HeaderValue::from_str(&date)?);
+        self = self.header(
+            Headers::X_AMZ_DATE,
+            HeaderValue::from_str(&date).map_err(error::Internal::from)?,
+        );
 
         let mut canonical: Vec<u8> = Vec::new();
         let mut signed: Vec<&str> = Vec::new();
@@ -51,23 +54,33 @@ impl SignRequest for Builder {
         canonical.extend_from_slice(
             &self
                 .method_ref()
-                .ok_or(Error::MethodNotSet)?
+                .ok_or(error::Internal::MethodNotSet)?
                 .as_str()
                 .as_bytes(),
         );
         canonical.push(b'\n');
 
         // Resource
-        canonical.extend_from_slice(&self.uri_ref().ok_or(Error::UriNotSet)?.path().as_bytes());
+        canonical.extend_from_slice(
+            &self
+                .uri_ref()
+                .ok_or(error::Internal::UriNotSet)?
+                .path()
+                .as_bytes(),
+        );
         canonical.push(b'\n');
 
-        if let Some(params) = self.uri_ref().ok_or(Error::UriNotSet)?.query() {
+        if let Some(params) = self.uri_ref().ok_or(error::Internal::UriNotSet)?.query() {
             canonical.extend_from_slice(&params.as_bytes());
         }
         canonical.push(b'\n');
 
         for header in headers {
-            if let Some(value) = self.headers_ref().ok_or(Error::HeadersNotSet)?.get(*header) {
+            if let Some(value) = self
+                .headers_ref()
+                .ok_or(error::Internal::HeadersNotSet)?
+                .get(*header)
+            {
                 canonical.extend_from_slice(&header.as_bytes());
                 canonical.push(b':');
                 canonical.extend_from_slice(&value.as_bytes());
@@ -90,7 +103,7 @@ impl SignRequest for Builder {
         // X_AMZ_CONTENT_SHA256 should ALWAYS be set
         if let Some(header) = self
             .headers_ref()
-            .ok_or(Error::HeadersNotSet)?
+            .ok_or(error::Error::from(error::Internal::HeadersNotSet))?
             .get(Headers::X_AMZ_CONTENT_SHA256)
         {
             canonical.extend_from_slice(&header.as_bytes());
@@ -107,12 +120,16 @@ impl SignRequest for Builder {
 
         let date = self
             .headers_ref()
-            .ok_or(Error::HeadersNotSet)?
+            .ok_or(error::Error::from(error::Internal::HeadersNotSet))?
             .get(Headers::X_AMZ_DATE)
-            .ok_or(Error::DateHeaderUnsetWhenSigning)?
-            .to_str()?;
+            .ok_or(error::Error::from(
+                error::Internal::DateHeaderUnsetWhenSigning,
+            ))?
+            .to_str()
+            .map_err(error::Internal::from)?;
 
-        let date = NaiveDateTime::parse_from_str(date, "%Y%m%dT%H%M%SZ")?;
+        let date =
+            NaiveDateTime::parse_from_str(date, "%Y%m%dT%H%M%SZ").map_err(error::Internal::from)?;
 
         let scope = format!(
             "{date}/{region}/s3/aws4_request",
@@ -137,6 +154,9 @@ impl SignRequest for Builder {
         signature = sig
     );
 
-        Ok(self.header(Headers::AUTHORIZATION, HeaderValue::from_str(&auth)?))
+        Ok(self.header(
+            Headers::AUTHORIZATION,
+            HeaderValue::from_str(&auth).map_err(error::Internal::from)?,
+        ))
     }
 }

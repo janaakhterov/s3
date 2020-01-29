@@ -1,12 +1,10 @@
 use crate::{
+    error,
     Acl,
     Headers,
     OptionalHeader,
 };
-use http::{
-    request::Builder,
-    Error,
-};
+use http::request::Builder;
 use serde::Deserialize;
 use std::convert::TryFrom;
 
@@ -125,7 +123,7 @@ pub(crate) trait OptionalGrants {
         self,
         acl: Option<Acl>,
         grants: Vec<(Permission, Grantee, T)>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self, error::Error>
     where
         Self: Sized;
 }
@@ -135,7 +133,7 @@ impl OptionalGrants for Builder {
         self,
         acl: Option<Acl>,
         grants: Vec<(Permission, Grantee, T)>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self, error::Error>
     where
         Self: Sized,
     {

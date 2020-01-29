@@ -1,4 +1,5 @@
 use crate::{
+    error,
     AwsRequest,
     AwsResponse,
     Error,
@@ -69,7 +70,8 @@ impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::empty())?)
+        Ok(request.body(HttpBody::empty())
+            .map_err(error::Internal::from)?)
     }
 
     fn into_response(

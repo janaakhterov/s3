@@ -1,4 +1,5 @@
 use crate::{
+    error,
     AwsRequest,
     Error,
     QueryParameter,
@@ -52,7 +53,8 @@ impl<'a> AwsRequest for GetBucketAnalyticsConfig<'a> {
             let bytes = SubResource::<'a>::into_response(response).await?;
             let string = String::from_utf8_lossy(&bytes);
 
-            let resp: BucketAnalytics = quick_xml::de::from_str(&string)?;
+            let resp: BucketAnalytics = quick_xml::de::from_str(&string)
+                        .map_err(error::Internal::from)?;
 
             Ok(resp)
         })

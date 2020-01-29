@@ -1,10 +1,10 @@
+use crate::error;
 use http::{
     request::Builder,
     uri::{
         PathAndQuery,
         Uri,
     },
-    Error,
 };
 use std::{
     collections::HashMap,
@@ -30,13 +30,13 @@ impl QueryParameter {
 }
 
 pub trait QueryParam {
-    fn query_param(self, params: impl IntoQueryParams) -> Result<Self, Error>
+    fn query_param(self, params: impl IntoQueryParams) -> Result<Self, error::Error>
     where
         Self: Sized;
 }
 
 impl QueryParam for Builder {
-    fn query_param(self, params: impl IntoQueryParams) -> Result<Self, Error>
+    fn query_param(self, params: impl IntoQueryParams) -> Result<Self, error::Error>
     where
         Self: Sized,
     {
@@ -45,8 +45,11 @@ impl QueryParam for Builder {
             .map(|value| (*value).clone())
             .unwrap()
             .into_parts();
-        parts.path_and_query = Some(PathAndQuery::try_from(params.into_query_params().as_str())?);
-        Ok(self.uri(Uri::from_parts(parts)?))
+        parts.path_and_query = Some(
+            PathAndQuery::try_from(params.into_query_params().as_str())
+                .map_err(error::Internal::from)?,
+        );
+        Ok(self.uri(Uri::from_parts(parts).map_err(error::Internal::from)?))
     }
 }
 

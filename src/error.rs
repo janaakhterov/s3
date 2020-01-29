@@ -5,18 +5,22 @@ use thiserror::Error;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 #[serde(rename = "Error")]
-pub struct ResponseError {
-    code: String,
-    message: String,
+pub struct AwsResponseError {
+    pub code: String,
+    pub message: String,
 }
 
 #[derive(Debug, Error)]
-pub enum Error {
+#[error("S3 responded with an status code {status}")]
+pub struct ResponseError {
+    pub status: hyper::StatusCode,
+    pub error: Option<AwsResponseError>,
+}
+
+#[derive(Debug, Error)]
+pub enum Internal {
     #[error("Error sending request")]
     RequestError(#[from] hyper::Error),
-
-    #[error("Received an error while executing a request: {0:?}")]
-    ResponseError(ResponseError),
 
     #[error("Invalid header value provided: {0:?}")]
     InvalidHeaderValue(#[from] InvalidHeaderValue),
@@ -24,22 +28,19 @@ pub enum Error {
     #[error("Failed to deserialize response error")]
     DeserializeError(#[from] quick_xml::DeError),
 
-    #[error("Failed to build client because not all fields were provided")]
-    ClientBuildError,
-
     #[error("x-amz-date was not set when signing a request")]
     DateHeaderUnsetWhenSigning,
 
     #[error("Host was not set in the url")]
     HostStrUnset,
 
-    #[error("x-amz-date was not encoded correctly")]
+    #[error("Failed to encode x-amz-date header")]
     DateHeaderToStrError(#[from] hyper::header::ToStrError),
 
-    #[error("Failed to parse chrono datetime: {0:?}")]
+    #[error("Failed to parse chrono datetime in header")]
     ChronoParseError(#[from] chrono::ParseError),
 
-    #[error("Failed to a number in header")]
+    #[error("Failed to parse a number in header")]
     ParseIntError(#[from] std::num::ParseIntError),
 
     #[error("Failed to parse a boolean in header")]
@@ -69,22 +70,38 @@ pub enum Error {
     #[error("Invalid uri parts")]
     InvalidUriParts(#[from] http::uri::InvalidUriParts),
 
-    #[error("Invalid uri parts")]
-    InvalidUrl(#[from] url::ParseError),
-
     #[error("last-modified header is not present on the response to a get object request")]
     LastModifiedNotPresentOnGetResponse,
+}
 
+#[derive(Debug, Error)]
+pub enum Credentials {
     #[cfg(feature = "credential_file")]
     #[error("Failed to parse aws credentials file")]
     AwsCredentialsParseError,
 
-    #[error("Could not find credentials from environment variables or credentials file")]
+    #[error("Could not find credentials from environment variables")]
     CouldNotFindCredentials,
 
+    #[cfg(feature = "credential_file")]
     #[error("Found credentials file, but could not find 'aws_access_key_id' *and* 'aws_secret_access_key'")]
     AwsCredentialsNotFound,
+}
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Received an error while executing a request: {0:?}")]
+    ResponseError(#[from] ResponseError),
+
+    #[error("Invalid uri parts")]
+    InvalidUrl(#[from] url::ParseError),
 
     #[error("Unsuccessful status code received. {0:?}")]
-    StatusCode(hyper::StatusCode),
+    Credentials(#[from] Credentials),
+
+    #[error("Internal Error")]
+    Internal(#[from] Internal),
+
+    #[error("Failed to build client because not all fields were provided")]
+    ClientBuildError,
 }

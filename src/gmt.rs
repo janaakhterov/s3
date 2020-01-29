@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::error;
 use chrono::{
     DateTime,
     NaiveDateTime,
@@ -7,7 +7,7 @@ use chrono::{
 
 pub trait Gmt {
     fn to_gmt(&self) -> String;
-    fn from_gmt<T: AsRef<str>>(date: T) -> Result<DateTime<Utc>, Error>;
+    fn from_gmt<T: AsRef<str>>(date: T) -> Result<DateTime<Utc>, error::Error>;
 }
 
 impl Gmt for DateTime<Utc> {
@@ -15,9 +15,10 @@ impl Gmt for DateTime<Utc> {
         format!("{}", self.format("%a, %d %b %Y %H:%M:%S GMT"))
     }
 
-    fn from_gmt<T: AsRef<str>>(date: T) -> Result<DateTime<Utc>, Error> {
+    fn from_gmt<T: AsRef<str>>(date: T) -> Result<DateTime<Utc>, error::Error> {
         Ok(DateTime::from_utc(
-            NaiveDateTime::parse_from_str(date.as_ref(), "%a, %d %b %Y %H:%M:%S GMT")?,
+            NaiveDateTime::parse_from_str(date.as_ref(), "%a, %d %b %Y %H:%M:%S GMT")
+                .map_err(error::Internal::from)?,
             Utc,
         ))
     }

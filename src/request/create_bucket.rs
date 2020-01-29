@@ -1,4 +1,5 @@
 use crate::{
+    error,
     Acl,
     AwsRequest,
     AwsResponse,
@@ -105,7 +106,8 @@ impl<'a> AwsRequest for CreateBucket<'a> {
             }
         }
 
-        let payload = to_string(&config)?;
+        let payload = to_string(&config)
+            .map_err(error::Internal::from)?;
 
         let request = Request::builder()
             .method(Method::PUT)
@@ -114,7 +116,7 @@ impl<'a> AwsRequest for CreateBucket<'a> {
             .payload_hash(Some(&payload.as_bytes()))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::from(payload))?)
+        Ok(request.body(HttpBody::from(payload)).map_err(error::Internal::from)?)
     }
 
     fn into_response(

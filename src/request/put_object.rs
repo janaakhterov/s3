@@ -1,4 +1,5 @@
 use crate::{
+    error,
     Acl,
     AwsRequest,
     AwsResponse,
@@ -119,11 +120,11 @@ impl<'a> AwsRequest for PutObject<'a> {
             .optional_header(Headers::EXPIRES, &self.expires.map(|since| since.to_gmt()))?
             .optional_header(Headers::CACHE_CONTROL, &cache)?
             .optional_grants(self.acl, self.grants)?
-            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5)?)
+            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5).map_err(error::Internal::from)?)
             .payload_hash(Some(&self.contents))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::from(self.contents))?)
+        Ok(request.body(HttpBody::from(self.contents)).map_err(error::Internal::from)?)
     }
 
     fn into_response(
