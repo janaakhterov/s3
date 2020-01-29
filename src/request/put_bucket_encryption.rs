@@ -13,10 +13,7 @@ use crate::{
     SigningKey,
 };
 use futures_core::future::BoxFuture;
-use http::{
-    header::HeaderValue,
-    method::Method,
-};
+use http::method::Method;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -114,13 +111,10 @@ impl<'a> AwsRequest for PutBucketEncryption<'a> {
 
         let payload = quick_xml::se::to_string(&config).map_err(error::Internal::from)?;
 
-        let content_md5 = base64::encode(&*md5::compute(&payload));
-
         let request = Request::builder()
             .method(Method::PUT)
             .host(url, self.bucket, "", Some(region))?
             .query_param(QueryParameter::ENCRYPTION)?
-            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5).map_err(error::Internal::from)?)
             .payload_hash(Some(&payload.as_bytes()))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 

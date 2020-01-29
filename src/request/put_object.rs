@@ -22,10 +22,7 @@ use chrono::{
     Utc,
 };
 use futures_core::future::BoxFuture;
-use http::{
-    header::HeaderValue,
-    method::Method,
-};
+use http:: method::Method;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -108,7 +105,6 @@ impl<'a> AwsRequest for PutObject<'a> {
         signing_key: &SigningKey,
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
-        let content_md5 = base64::encode(&*md5::compute(&self.contents));
         let cache = self.cache.map(|cache| {
             let cache: String = cache.into();
             cache
@@ -120,7 +116,6 @@ impl<'a> AwsRequest for PutObject<'a> {
             .optional_header(Headers::EXPIRES, &self.expires.map(|since| since.to_gmt()))?
             .optional_header(Headers::CACHE_CONTROL, &cache)?
             .optional_grants(self.acl, self.grants)?
-            .header(Headers::CONTENT_MD5, HeaderValue::from_str(&content_md5).map_err(error::Internal::from)?)
             .payload_hash(Some(&self.contents))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
