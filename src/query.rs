@@ -27,6 +27,9 @@ impl QueryParameter {
     pub const ACL: &'static str = "acl";
     pub const ANALYTICS: &'static str = "analytics";
     pub const CORS: &'static str = "cors";
+    pub const LIFECYCLE: &'static str = "lifecycle";
+    pub const LOCATION: &'static str = "location";
+    pub const LOGGING: &'static str = "logging";
     pub const ID: &'static str = "id";
 }
 

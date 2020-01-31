@@ -14,42 +14,27 @@ use hyper::{
     Request,
     Response,
 };
-use serde::Deserialize;
-use crate::request::list_buckets::Owner;
-use crate::types::Grant;
 use url::Url;
+use crate::types::BucketMetrics;
 
-#[derive(Debug, Deserialize)]
-pub struct BucketAcl {
-    #[serde(rename = "Owner")]
-    owner: Owner,
+pub struct GetBucketMetrics<'a>(SubResource<'a>);
 
-    #[serde(rename = "AccessControlList")]
-    list: AccessControlList
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AccessControlList {
-    #[serde(rename = "Grant")]
-    grants: Vec<Grant>,
-}
-
-pub struct GetBucketAcl<'a>(SubResource<'a>);
-
-impl<'a> GetBucketAcl<'a> {
-    /// Create a new GetBucketAcl request with default parameters
-    pub fn new(bucket: &'a str) -> Self {
-        GetBucketAcl(SubResource {
+impl<'a> GetBucketMetrics<'a> {
+    /// Create a new GetBucketMetrics request with default parameters
+    pub fn new(bucket: &'a str, id: &'a str) -> Self {
+        GetBucketMetrics(SubResource {
             bucket,
             method: Method::GET,
             key: None,
-            params: vec![(QueryParameter::ACL, None)],
+            params: vec![(QueryParameter::METRICS, None),
+                (QueryParameter::ID, Some(id)),
+            ],
         })
     }
 }
 
-impl<'a> AwsRequest for GetBucketAcl<'a> {
-    type Response = BucketAcl;
+impl<'a> AwsRequest for GetBucketMetrics<'a> {
+    type Response = BucketMetrics;
 
     fn into_request<AR: AsRef<str>>(
         self,
@@ -68,7 +53,7 @@ impl<'a> AwsRequest for GetBucketAcl<'a> {
             let bytes = SubResource::<'a>::into_response(response).await?;
             let string = String::from_utf8_lossy(&bytes);
 
-            let resp: BucketAcl = quick_xml::de::from_str(&string)
+            let resp: BucketMetrics = quick_xml::de::from_str(&string)
                         .map_err(error::Internal::from)?;
 
             Ok(resp)

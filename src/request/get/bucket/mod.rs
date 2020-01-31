@@ -4,3 +4,7 @@ pub mod analytics_config;
 pub mod cors;
 pub mod encryption;
 pub mod inventory_config;
+pub mod lifecycle;
+pub mod location;
+pub mod logging;
+pub mod metrics;

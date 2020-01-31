@@ -1,7 +1,8 @@
 use crate::error;
+use serde::Deserialize;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 /// Provides storage class information of the object.
 /// Default storage class is `STANDARD`
 pub enum StorageClass {

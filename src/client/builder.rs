@@ -30,35 +30,30 @@ impl<T: AsRef<str>> Builder<T> {
     }
 
     /// Set the client region
-    pub fn region(self, region: Region) -> Self {
-        Self { region, ..self }
+    pub fn region(mut self, region: Region) -> Self {
+        self.region = region;
+        self
     }
 
     /// Set the aws s3 server uri
-    pub fn host(self, host: T) -> Self {
-        Self {
-            host: Some(host),
-            ..self
-        }
+    pub fn host(mut self, host: T) -> Self {
+        self.host = Some(host);
+        self
     }
 
     /// Set the access key to be used on every request
-    pub fn access_key(self, access_key: T) -> Self {
-        Self {
-            access_key: Some(access_key),
-            ..self
-        }
+    pub fn access_key(mut self, access_key: T) -> Self {
+        self.access_key = Some(access_key);
+        self
     }
 
     /// Set the access key paired secret key to sign every request.
     ///
     /// **NOTE:** The secret key is not stored in memory after
     /// a client is built.
-    pub fn secret_key(self, secret_key: T) -> Self {
-        Self {
-            secret_key: Some(secret_key),
-            ..self
-        }
+    pub fn secret_key(mut self, secret_key: T) -> Self {
+        self.secret_key = Some(secret_key);
+        self
     }
 
     /// Build a client with the give settings
