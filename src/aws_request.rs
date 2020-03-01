@@ -1,4 +1,5 @@
 use crate::{
+    Client,
     Error,
     Region,
     SigningKey,
@@ -10,7 +11,7 @@ use hyper::{
 };
 use url::Url;
 
-pub trait AwsRequest {
+pub trait AwsRequest: Sized + Send {
     type Response;
 
     fn into_request<T: AsRef<str>>(
@@ -24,4 +25,11 @@ pub trait AwsRequest {
     fn into_response(
         response: hyper::Response<Body>,
     ) -> BoxFuture<'static, Result<Self::Response, Error>>;
+
+    fn send<'c>(self, client: &'c Client) -> BoxFuture<'c, Result<Self::Response, Error>>
+    where Self: 'c {
+        Box::pin(async move {
+            client.send(self).await
+        })
+    }
 }

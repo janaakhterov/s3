@@ -23,6 +23,7 @@ pub(crate) use crate::{
 pub use crate::{
     acl::Acl,
     cache::CacheControl,
+    client::Client,
     error::Error,
     region::Region,
     request::{

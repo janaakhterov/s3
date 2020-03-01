@@ -42,19 +42,19 @@ const HEADERS: [&str; 9] = [
     Headers::X_AMZ_GRANT_FULL_CONTROL,
 ];
 
-pub struct DeleteBucket<T: AsRef<str>> {
+pub struct DeleteBucket<'a> {
     /// The bucket to delete.
-    bucket: T,
+    bucket: &'a str,
 }
 
-impl<T: AsRef<str>> DeleteBucket<T> {
+impl<'a> DeleteBucket<'a> {
     /// Create a new DeleteBucket request with the given bucket name.
-    pub fn new(bucket: T) -> Self {
+    pub fn new(bucket: &'a str) -> Self {
         DeleteBucket { bucket }
     }
 }
 
-impl<T: AsRef<str>> AwsRequest for DeleteBucket<T> {
+impl<'a> AwsRequest for DeleteBucket<'a> {
     type Response = ();
 
     fn into_request<AR: AsRef<str>>(
