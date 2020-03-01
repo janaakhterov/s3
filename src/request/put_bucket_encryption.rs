@@ -1,3 +1,6 @@
+use crate::types::BucketEncryption;
+use crate::types::Rule;
+use crate::types::AwsEncryption;
 use crate::{
     error,
     AwsRequest,
@@ -20,8 +23,6 @@ use hyper::{
     Response,
 };
 use url::Url;
-use crate::types::BucketEncryption;
-use crate::types::Rule;
 
 // PutBucketEncryption requset Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
@@ -32,20 +33,6 @@ const HEADERS: [&str; 4] = [
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
 ];
-
-pub enum AwsEncryption<'a> {
-    Sse,
-    Kms(&'a str),
-}
-
-impl<'a> Into<&'static str> for AwsEncryption<'a> {
-    fn into(self) -> &'static str {
-        match self {
-            AwsEncryption::Sse => "AES256",
-            AwsEncryption::Kms(_) => "aws:kms",
-        }
-    }
-}
 
 pub struct PutBucketEncryption<'a> {
     /// Bucket name to which the PUT operation was initiated.

@@ -1,4 +1,5 @@
 pub mod analytics;
+pub mod bucket;
 pub mod cors;
 pub mod encryption;
 pub mod grant;
@@ -7,6 +8,7 @@ pub mod lifecycle;
 pub mod location;
 pub mod logging;
 pub mod metrics;
+pub mod notification;
 pub mod tag;
 
 pub use analytics::{
@@ -20,11 +22,13 @@ pub use analytics::{
     StorageClassAnalytics,
     StorageClassAnalyticsDataExport,
 };
+pub use bucket::CreateBucketConfiguration;
 pub use cors::{
     BucketCors,
     CorsRule,
 };
 pub use encryption::{
+    AwsEncryption,
     BucketEncryption,
     Rule,
 };
@@ -66,5 +70,14 @@ pub use metrics::{
     BucketMetrics,
     MetricsAndOperator,
     MetricsFilter,
+};
+pub use notification::{
+    CloudFunctionConfiguration,
+    FilterRule,
+    NotificationConfigFilter,
+    NotificationConfiguration,
+    QueueConfiguration,
+    S3KeyFilter,
+    TopicConfiguration,
 };
 pub use tag::Tag;

@@ -8,3 +8,4 @@ pub mod lifecycle;
 pub mod location;
 pub mod logging;
 pub mod metrics;
+pub mod notification;

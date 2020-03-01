@@ -22,8 +22,8 @@ use hyper::{
     Response,
 };
 use quick_xml::se::to_string;
-use serde::Serialize;
 use url::Url;
+use crate::types::bucket::CreateBucketConfiguration;
 
 // CreateBucket request Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
@@ -39,15 +39,6 @@ const HEADERS: [&str; 9] = [
     Headers::X_AMZ_GRANT_READ_ACP,
     Headers::X_AMZ_GRANT_FULL_CONTROL,
 ];
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct CreateBucketConfiguration {
-    // Currently quick-xml does not support unit variants
-    // like the `Region` enum, so a work around is to use
-    // `String`
-    location_constraint: Option<String>,
-}
 
 pub struct CreateBucket<'a> {
     /// The name of the bucket to create.

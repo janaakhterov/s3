@@ -1,3 +1,5 @@
+use crate::types::BucketLogging;
+
 impl_sub_resource!(GetBucketLogging => BucketLogging);
 
 impl<'a> GetBucketLogging<'a> {

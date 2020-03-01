@@ -31,6 +31,7 @@ impl QueryParameter {
     pub const LOCATION: &'static str = "location";
     pub const LOGGING: &'static str = "logging";
     pub const ID: &'static str = "id";
+    pub const NOTIFICATION: &'static str = "notification";
 }
 
 pub trait QueryParam {

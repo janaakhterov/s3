@@ -1,9 +1,7 @@
 macro_rules! impl_sub_resource {
     ($name: ident => $output: ty) => {
-        #[allow(unused_imports)]
         use crate::{
             error,
-            types::BucketLogging,
             AwsRequest,
             Error,
             QueryParameter,

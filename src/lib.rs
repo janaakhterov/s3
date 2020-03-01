@@ -57,6 +57,7 @@ pub use crate::{
                 location::GetBucketLocation,
                 logging::GetBucketLogging,
                 metrics::GetBucketMetrics,
+                notification::GetBucketNotificationConfig,
             },
             object::GetObject,
         },
