@@ -52,7 +52,7 @@ macro_rules! impl_sub_resource {
 
 pub mod create_bucket;
 pub mod list_buckets;
-pub mod put_bucket_encryption;
+// pub mod put_bucket_encryption;
 pub mod put_object;
 
 pub mod delete;
@@ -62,7 +62,7 @@ pub(crate) mod sub_resource;
 
 pub use create_bucket::*;
 pub use list_buckets::*;
-pub use put_bucket_encryption::*;
+// pub use put_bucket_encryption::*;
 pub use put_object::*;
 
 pub use delete::*;

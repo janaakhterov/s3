@@ -8,7 +8,15 @@ pub struct Tag {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename = "GetBucketTaggingOutput")]
 #[serde(rename_all = "PascalCase")]
 pub struct BucketTagging {
-    tag_set: Vec<Tag>,
+    tag_set: TagSet,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct TagSet {
+    #[serde(rename = "Tag")]
+    pub tags: Vec<Tag>,
 }

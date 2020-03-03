@@ -1,11 +1,13 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename = "GetBucketWebsiteOutput")]
 #[serde(rename_all = "PascalCase")]
 pub struct BucketWebsite {
     error_document: ErrorDocument,
     index_document: IndexDocument,
     redirect_all_requests_to: RedirectAllRequestsTo,
+    #[serde(rename = "RoutingRule")]
     routing_rules: Vec<RoutingRule>,
 }
 

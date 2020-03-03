@@ -2,12 +2,29 @@ use super::Tag;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename = "GetBucaetAnalyticsConfig")]
+#[serde(rename_all = "PascalCase")]
 pub struct BucketAnalytics {
     #[serde(rename = "ID")]
     id: String,
 
     #[serde(rename = "Filter")]
-    list: AnalyticsFilter,
+    filter: AnalyticsFilter,
+
+    storage_class_analysis: StorageClassAnalysis,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct StorageClassAnalysis {
+    data_export: Option<StorageClassAnalysisDataExport>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct StorageClassAnalysisDataExport {
+    destination: AnalyticsExportDestination,
+    output_schema_version: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,7 +54,7 @@ pub struct StorageClassAnalytics {
 #[serde(rename_all = "PascalCase")]
 pub struct StorageClassAnalyticsDataExport {
     destination: AnalyticsExportDestination,
-    output_schema_version: OutputSchemaVersion,
+    output_schema_version: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -51,18 +68,6 @@ pub struct AnalyticsExportDestination {
 pub struct AnalyticsS3BucketDestination {
     bucket: String,
     bucket_account_id: Option<String>,
-    format: Format,
+    format: String,
     prefix: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub enum Format {
-    #[serde(rename = "CSV")]
-    Csv,
-}
-
-#[derive(Debug, Deserialize)]
-pub enum OutputSchemaVersion {
-    #[serde(rename = "V_1")]
-    V1,
 }

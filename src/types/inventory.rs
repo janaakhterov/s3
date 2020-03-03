@@ -1,49 +1,46 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct InventoryConfig {
-    destination: Destination,
-    is_enabled: bool,
-    filter: InventoryFilter,
+    inventory_destination: InventoryDestination,
+    inventory_filter: InventoryFilter,
+
+    #[serde(rename = "ID")]
     id: String,
-    version: String,
-    fields: OptionalFields,
+
+    included_object_versions: String,
+    is_enabled: bool,
+    optional_fields: OptionalFields,
     schedule: InventorySchedule,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Destination {
+#[serde(rename_all = "PascalCase")]
+pub struct InventoryDestination {
     #[serde(rename = "S3BucketDestination")]
-    destination: BucketDestination,
+    s3_bucket_destination: InventoryS3BucketDestination,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct BucketDestination {
+pub struct InventoryS3BucketDestination {
     account_id: Option<String>,
     bucket: String,
-    encryption: Option<InventoryEncryption>,
-    format: InventoryFormat,
+    inventory_encryption: Option<InventoryEncryption>,
+    format: String,
     prefix: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-pub enum InventoryFormat {
-    #[serde(rename = "CSV")]
-    Csv,
-    #[serde(rename = "ORC")]
-    Orc,
-    #[serde(rename = "Parquet")]
-    Parquet,
-}
-
-#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct OptionalFields {
     #[serde(rename = "Field")]
     fields: Vec<InventoryFields>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub enum InventoryFields {
     Size,
     LastModifiedDate,
@@ -59,6 +56,7 @@ pub enum InventoryFields {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct InventoryEncryption {
     #[serde(rename = "SSEKMS")]
     sse_kms: Option<SseKms>,
@@ -82,11 +80,5 @@ pub struct InventoryFilter {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct InventorySchedule {
-    frequency: InventoryFrequency,
-}
-
-#[derive(Debug, Deserialize)]
-pub enum InventoryFrequency {
-    Daily,
-    Weekly,
+    frequency: String,
 }

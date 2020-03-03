@@ -1,5 +1,4 @@
 use super::Tag;
-use crate::StorageClass;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -13,7 +12,7 @@ pub struct ReplicationConfiguration {
 #[serde(rename_all = "PascalCase")]
 pub struct ReplicationRule {
     delete_marker_replication: Option<DeleteMarkerReplication>,
-    destination: Destination,
+    destination: ReplicationDestination,
     existing_object_replication: Option<ExistingObjectReplication>,
     filter: Option<ReplicationFilter>,
     id: Option<String>,
@@ -25,14 +24,14 @@ pub struct ReplicationRule {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct Destination {
+pub struct ReplicationDestination {
     access_control_translation: Option<AccessControlTranslation>,
     account: Option<String>,
     bucket: String,
     encryption_configuration: Option<EncryptionConfiguration>,
-    metrics: Option<Metrics>,
+    metrics: Option<ReplicationMetrics>,
     replication_time: Option<ReplicationTime>,
-    storage_class: StorageClass,
+    storage_class: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,6 +52,8 @@ pub struct ReplicationFilter {
 #[serde(rename_all = "PascalCase")]
 pub struct ReplicationRuleAndOperator {
     prefix: Option<String>,
+
+    #[serde(rename = "Tag")]
     tags: Vec<Tag>,
 }
 
@@ -65,12 +66,12 @@ pub struct AccessControlTranslation {
 #[derive(Debug, Deserialize)]
 pub struct EncryptionConfiguration {
     #[serde(rename = "ReplicaKmsKeyID")]
-    replica_kms_key_id: String,
+    replica_kms_key_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct Metrics {
+pub struct ReplicationMetrics {
     event_threshold: ReplicationTimeValue,
     status: String,
 }
@@ -78,7 +79,7 @@ pub struct Metrics {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ReplicationTimeValue {
-    minutes: i64,
+    minutes: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]

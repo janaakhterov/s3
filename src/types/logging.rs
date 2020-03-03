@@ -1,5 +1,4 @@
 use super::Grantee;
-use crate::Permission;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -24,5 +23,5 @@ pub struct LoggingEnabled {
 #[serde(rename_all = "PascalCase")]
 pub struct TargetGrant {
     grantee: Option<Grantee>,
-    permission: Option<Permission>,
+    permission: Option<String>,
 }
