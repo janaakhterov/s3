@@ -7,11 +7,11 @@ use serde::{
 #[serde(rename = "ServerSideEncryptionConfiguration")]
 pub struct BucketEncryption {
     #[serde(rename = "Rule")]
-    pub rule: Rule,
+    pub rule: EncryptionRule,
 }
 
 #[derive(Default, Debug, Deserialize, Serialize)]
-pub struct Rule {
+pub struct EncryptionRule {
     #[serde(rename = "SSEAlgorithm")]
     pub sse: Option<String>,
     #[serde(rename = "KMSMasterKeyID")]

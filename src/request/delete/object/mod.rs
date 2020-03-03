@@ -21,6 +21,8 @@ use url::Url;
 
 pub mod tagging;
 
+pub use tagging::*;
+
 // DeleteObject requset Headers, this list *MUST* be in
 // sorted order as it is used in the signing process
 // of each request.

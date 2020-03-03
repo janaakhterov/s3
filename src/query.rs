@@ -32,6 +32,9 @@ impl QueryParameter {
     pub const LOGGING: &'static str = "logging";
     pub const ID: &'static str = "id";
     pub const NOTIFICATION: &'static str = "notification";
+    pub const POLICY_STATUS: &'static str = "policyStatus";
+    pub const REQUEST_PAYMENT: &'static str = "requestPayment";
+    pub const VERSIONING: &'static str = "versioning";
 }
 
 pub trait QueryParam {

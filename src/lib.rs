@@ -26,45 +26,7 @@ pub use crate::{
     client::Client,
     error::Error,
     region::Region,
-    request::{
-        create_bucket::CreateBucket,
-        delete::{
-            bucket::{
-                encryption::DeleteBucketEncryption,
-                inventory_config::DeleteBucketInventoryConfig,
-                metrics_config::DeleteBucketMetricsConfig,
-                policy::DeleteBucketPolicy,
-                replication::DeleteBucketReplication,
-                tagging::DeleteBucketTagging,
-                website::DeleteBucketWebsite,
-                DeleteBucket,
-            },
-            object::{
-                tagging::DeleteObjectTagging,
-                DeleteObject,
-            },
-            public_access_block::DeletePublicAccessBlock,
-        },
-        get::{
-            bucket::{
-                accelerate_config::GetBucketAccelerateConfig,
-                acl::GetBucketAcl,
-                analytics_config::GetBucketAnalyticsConfig,
-                cors::GetBucketCors,
-                encryption::GetBucketEncryption,
-                inventory_config::GetBucketInventoryConfig,
-                lifecycle::GetBucketLifecycle,
-                location::GetBucketLocation,
-                logging::GetBucketLogging,
-                metrics::GetBucketMetrics,
-                notification::GetBucketNotificationConfig,
-            },
-            object::GetObject,
-        },
-        list_buckets::ListBuckets,
-        put_bucket_encryption::PutBucketEncryption,
-        put_object::PutObject,
-    },
+    request::*,
     storage_class::StorageClass,
 };
 

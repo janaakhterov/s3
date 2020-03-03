@@ -59,3 +59,11 @@ pub mod delete;
 pub mod get;
 
 pub(crate) mod sub_resource;
+
+pub use create_bucket::*;
+pub use list_buckets::*;
+pub use put_bucket_encryption::*;
+pub use put_object::*;
+
+pub use delete::*;
+pub use get::*;

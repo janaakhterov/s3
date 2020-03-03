@@ -1,5 +1,5 @@
 use crate::types::BucketEncryption;
-use crate::types::Rule;
+use crate::types::encryption::EncryptionRule;
 use crate::types::AwsEncryption;
 use crate::{
     error,
@@ -72,7 +72,7 @@ impl<'a> AwsRequest for PutBucketEncryption<'a> {
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let mut config = BucketEncryption {
-            rule: Rule::default(),
+            rule: EncryptionRule::default(),
         };
 
         if let Some(encryption) = self.encryption {
