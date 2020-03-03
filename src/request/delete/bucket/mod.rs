@@ -73,7 +73,7 @@ impl<'a> AwsRequest for DeleteBucket<'a> {
         region: Region,
     ) -> Result<Request<HttpBody>, Error> {
         let request = Request::builder()
-            .method(Method::PUT)
+            .method(Method::DELETE)
             .host(url, self.bucket, "", None)?
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;

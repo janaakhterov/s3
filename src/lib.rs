@@ -1,5 +1,4 @@
 pub(crate) use crate::{
-    aws_request::AwsRequest,
     aws_response::AwsResponse,
     gmt::Gmt,
     grant::{
@@ -22,6 +21,7 @@ pub(crate) use crate::{
 
 pub use crate::{
     acl::Acl,
+    aws_request::AwsRequest,
     cache::CacheControl,
     client::Client,
     error::Error,
