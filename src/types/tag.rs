@@ -20,3 +20,10 @@ pub struct TagSet {
     #[serde(rename = "Tag")]
     pub tags: Vec<Tag>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename = "GetObjectTagging")]
+#[serde(rename_all = "PascalCase")]
+pub struct ObjectTagging {
+    tag_set: TagSet,
+}
