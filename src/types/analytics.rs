@@ -8,9 +8,7 @@ pub struct BucketAnalytics {
     #[serde(rename = "ID")]
     id: String,
 
-    #[serde(rename = "Filter")]
     filter: AnalyticsFilter,
-
     storage_class_analysis: StorageClassAnalysis,
 }
 
@@ -70,4 +68,22 @@ pub struct AnalyticsS3BucketDestination {
     bucket_account_id: Option<String>,
     format: String,
     prefix: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename = "ListBucketAnalyticsConfiguration")]
+#[serde(rename_all = "PascalCase")]
+pub struct BucketAnalyticsConfiguration {
+    analytics_configuration: Vec<AnalyticsConfiguration>,
+    continuation_token: String,
+    is_truncated: bool,
+    next_continuation_token: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct AnalyticsConfiguration {
+    filter: Option<AnalyticsFilter>,
+    id: String,
+    storage_class_analysis: StorageClassAnalysis,
 }

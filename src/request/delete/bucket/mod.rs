@@ -78,7 +78,8 @@ impl<'a> AwsRequest for DeleteBucket<'a> {
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::empty())
+        Ok(request
+            .body(HttpBody::empty())
             .map_err(error::Internal::from)?)
     }
 

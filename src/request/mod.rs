@@ -40,14 +40,14 @@ macro_rules! impl_sub_resource {
                     let bytes = SubResource::<'a>::into_response(response).await?;
                     let string = String::from_utf8_lossy(&bytes);
 
-                    let resp: $output = quick_xml::de::from_str(&string)
-                                .map_err(error::Internal::from)?;
+                    let resp: $output =
+                        quick_xml::de::from_str(&string).map_err(error::Internal::from)?;
 
                     Ok(resp)
                 })
             }
         }
-    }
+    };
 }
 
 pub mod create_bucket;

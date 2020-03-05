@@ -1,5 +1,8 @@
 use crate::{
-    error::{self, AwsResponseError},
+    error::{
+        self,
+        AwsResponseError,
+    },
     storage_class::StorageClass,
     Error,
     Gmt,
@@ -35,7 +38,8 @@ impl AwsResponse for Response<HttpBody> {
             .headers()
             .get(Headers::LAST_MODIFIED)
             .map(HeaderValue::to_str)
-            .transpose().map_err(error::Internal::from)?
+            .transpose()
+            .map_err(error::Internal::from)?
             .map(DateTime::from_gmt)
             .transpose()?
             .ok_or(error::Internal::LastModifiedNotPresentOnGetResponse)?)
@@ -46,7 +50,8 @@ impl AwsResponse for Response<HttpBody> {
             .headers()
             .get(Headers::ETAG)
             .ok_or(error::Internal::NoEtagInResponse)?
-            .to_str().map_err(error::Internal::from)?
+            .to_str()
+            .map_err(error::Internal::from)?
             .to_owned())
     }
 
@@ -55,7 +60,8 @@ impl AwsResponse for Response<HttpBody> {
             .headers()
             .get(Headers::X_AMZ_VERSION_ID)
             .map(HeaderValue::to_str)
-            .transpose().map_err(error::Internal::from)?
+            .transpose()
+            .map_err(error::Internal::from)?
             .map(str::to_owned))
     }
 
@@ -64,14 +70,17 @@ impl AwsResponse for Response<HttpBody> {
             .headers()
             .get(Headers::EXPIRES)
             .map(HeaderValue::to_str)
-            .transpose().map_err(error::Internal::from)?
+            .transpose()
+            .map_err(error::Internal::from)?
             .map(DateTime::from_gmt)
             .transpose()?)
     }
 
     fn storage_class(&self) -> Result<StorageClass, Error> {
         if let Some(header) = self.headers().get(Headers::X_AMZ_STORAGE_CLASS) {
-            Ok(StorageClass::from_str(header.to_str().map_err(error::Internal::from)?)?)
+            Ok(StorageClass::from_str(
+                header.to_str().map_err(error::Internal::from)?,
+            )?)
         } else {
             Ok(StorageClass::Standard)
         }
@@ -82,9 +91,11 @@ impl AwsResponse for Response<HttpBody> {
             .headers()
             .get(Headers::PARTS_COUNT)
             .map(HeaderValue::to_str)
-            .transpose().map_err(error::Internal::from)?
+            .transpose()
+            .map_err(error::Internal::from)?
             .map(u64::from_str)
-            .transpose().map_err(error::Internal::from)?)
+            .transpose()
+            .map_err(error::Internal::from)?)
     }
 
     fn error(&mut self) -> BoxFuture<Result<Vec<u8>, Error>> {
@@ -106,8 +117,8 @@ impl AwsResponse for Response<HttpBody> {
                     })?
                 } else {
                     let error = String::from_utf8_lossy(&bytes);
-                    let error: AwsResponseError = quick_xml::de::from_str(&error)
-                        .map_err(error::Internal::from)?;
+                    let error: AwsResponseError =
+                        quick_xml::de::from_str(&error).map_err(error::Internal::from)?;
                     Err(error::ResponseError {
                         status,
                         error: Some(error),
@@ -124,8 +135,10 @@ impl AwsResponse for Response<HttpBody> {
             .headers()
             .get(Headers::DELETE_MARKER)
             .map(HeaderValue::to_str)
-            .transpose().map_err(error::Internal::from)?
+            .transpose()
+            .map_err(error::Internal::from)?
             .map(bool::from_str)
-            .transpose().map_err(error::Internal::from)?)
+            .transpose()
+            .map_err(error::Internal::from)?)
     }
 }

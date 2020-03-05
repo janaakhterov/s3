@@ -27,9 +27,9 @@ pub trait AwsRequest: Sized + Send {
     ) -> BoxFuture<'static, Result<Self::Response, Error>>;
 
     fn send<'c>(self, client: &'c Client) -> BoxFuture<'c, Result<Self::Response, Error>>
-    where Self: 'c {
-        Box::pin(async move {
-            client.send(self).await
-        })
+    where
+        Self: 'c,
+    {
+        Box::pin(async move { client.send(self).await })
     }
 }

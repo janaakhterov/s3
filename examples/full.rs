@@ -6,13 +6,13 @@ use chrono::{
 };
 use s3::{
     client::Client,
-    GetObject,
-    PutObject,
+    AwsRequest,
     CreateBucket,
     DeleteBucket,
     DeleteObject,
+    GetObject,
+    PutObject,
     Region,
-    AwsRequest,
 };
 
 static SECRET_ACCESS_KEY: &'static str = "NQMJwbNv0qjBBtAIPbV47JOnqrGCveuqVvO8XwuG";
@@ -28,7 +28,10 @@ async fn main() -> Result<(), anyhow::Error> {
         .secret_key(&SECRET_ACCESS_KEY)
         .build()?;
 
-    let resp = CreateBucket::new("createbuckettest").location(Region::UsWest1).send(&client).await?;
+    let resp = CreateBucket::new("createbuckettest")
+        .location(Region::UsWest1)
+        .send(&client)
+        .await?;
 
     println!("CreateBucket: {:#?}", resp);
 
@@ -37,21 +40,22 @@ async fn main() -> Result<(), anyhow::Error> {
     println!("ListBuckets: {:#?}", resp);
 
     let resp = PutObject::new(
-            "createbuckettest",
-            "putobject_example_file",
-            "random bytes".as_bytes().to_vec(),
-        )
-        .expires(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0))
-        .grant_read_email("example@gmail.com")
-        .send(&client).await?;
-
+        "createbuckettest",
+        "putobject_example_file",
+        "random bytes".as_bytes().to_vec(),
+    )
+    .expires(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0))
+    .grant_read_email("example@gmail.com")
+    .send(&client)
+    .await?;
 
     println!("PutObject: {:#?}", resp);
 
     let resp = GetObject::new("createbuckettest", "putobject_example_file")
         .range(0u64, 100u64)
         .if_modified_since(Utc.ymd(2020, 1, 1).and_hms(0, 0, 0))
-        .send(&client).await?;
+        .send(&client)
+        .await?;
 
     println!("GetObject: {:#?}", resp);
 
@@ -61,9 +65,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     println!("DeleteObject: {:#?}", resp);
 
-    let resp = DeleteBucket::new("createbuckettest")
-        .send(&client)
-        .await?;
+    let resp = DeleteBucket::new("createbuckettest").send(&client).await?;
 
     println!("DeleteBucket: {:#?}", resp);
 

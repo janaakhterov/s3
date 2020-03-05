@@ -82,3 +82,12 @@ pub struct InventoryFilter {
 pub struct InventorySchedule {
     frequency: String,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct InventoryConfigs {
+    continuation_token: String,
+    inventory_configuration: Vec<InventoryConfig>,
+    is_truncated: bool,
+    next_continuation_token: String,
+}

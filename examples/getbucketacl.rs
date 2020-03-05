@@ -18,9 +18,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .secret_key(&SECRET_ACCESS_KEY)
         .build()?;
 
-    let resp = client
-        .send(GetBucketAcl::new("test"))
-        .await?;
+    let resp = client.send(GetBucketAcl::new("test")).await?;
 
     println!("{:#?}", resp);
 

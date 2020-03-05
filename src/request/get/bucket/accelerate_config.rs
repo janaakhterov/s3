@@ -20,7 +20,7 @@ use url::Url;
 #[derive(Debug, Deserialize)]
 pub struct GetBucketAccelerateConfigOutput {
     #[serde(rename = "Status")]
-    status: Status
+    status: Status,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,8 +64,8 @@ impl<'a> AwsRequest for GetBucketAccelerateConfig<'a> {
             if !bytes.is_empty() {
                 let string = String::from_utf8_lossy(&bytes);
 
-                let resp: GetBucketAccelerateConfigOutput = quick_xml::de::from_str(&string)
-                        .map_err(error::Internal::from)?;
+                let resp: GetBucketAccelerateConfigOutput =
+                    quick_xml::de::from_str(&string).map_err(error::Internal::from)?;
                 Ok(Some(resp.status))
             } else {
                 Ok(None)

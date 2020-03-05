@@ -1,5 +1,9 @@
 use crate::{
     error,
+    types::{
+        Bucket,
+        ListBucketsResponse,
+    },
     AwsRequest,
     AwsResponse,
     Error,
@@ -10,10 +14,6 @@ use crate::{
     SignRequest,
     SigningKey,
 };
-use chrono::{
-    DateTime,
-    Utc,
-};
 use futures_core::future::BoxFuture;
 use http::method::Method;
 use hyper::{
@@ -21,7 +21,6 @@ use hyper::{
     Request,
     Response,
 };
-use serde::Deserialize;
 use url::Url;
 
 // ListBucket request Headers, this list *MUST* be in
@@ -32,36 +31,6 @@ const HEADERS: [&str; 3] = [
     Headers::X_AMZ_CONTENT_SHA256,
     Headers::X_AMZ_DATE,
 ];
-
-#[derive(Debug, Deserialize)]
-pub(super) struct Owner {
-    #[serde(rename = "ID")]
-    pub(super) id: Option<String>,
-
-    #[serde(rename = "DisplayName")]
-    pub(super) display_name: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename = "ListAllMyBucketsResult")]
-#[serde(rename_all = "PascalCase")]
-struct ListBucketsResponse {
-    owner: Owner,
-    buckets: Buckets,
-}
-
-#[derive(Debug, Deserialize)]
-struct Buckets {
-    #[serde(rename = "Bucket")]
-    buckets: Vec<Bucket>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Bucket {
-    pub creation_date: DateTime<Utc>,
-    pub name: String,
-}
 
 /// ListBucket request doesn't have any parameters.
 /// Returns a list of buckets owned by the requestor.
@@ -83,7 +52,9 @@ impl AwsRequest for ListBuckets {
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::empty()).map_err(error::Internal::from)?)
+        Ok(request
+            .body(HttpBody::empty())
+            .map_err(error::Internal::from)?)
     }
 
     fn into_response(
@@ -92,8 +63,8 @@ impl AwsRequest for ListBuckets {
         Box::pin(async move {
             let bytes = response.error().await?;
             let results = String::from_utf8_lossy(&bytes);
-            let results: ListBucketsResponse = quick_xml::de::from_str(&results)
-                        .map_err(error::Internal::from)?;
+            let results: ListBucketsResponse =
+                quick_xml::de::from_str(&results).map_err(error::Internal::from)?;
 
             Ok(results.buckets.buckets)
         })

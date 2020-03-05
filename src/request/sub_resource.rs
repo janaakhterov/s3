@@ -50,7 +50,8 @@ impl<'a> AwsRequest for SubResource<'a> {
             .payload_hash(None)?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::empty())
+        Ok(request
+            .body(HttpBody::empty())
             .map_err(error::Internal::from)?)
     }
 

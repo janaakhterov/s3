@@ -6,13 +6,13 @@ use crate::{
     CacheControl,
     Error,
     Gmt,
-    Permission,
     Grantee,
     Headers,
     Host,
     OptionalGrants,
     OptionalHeader,
     PayloadHash,
+    Permission,
     Region,
     SignRequest,
     SigningKey,
@@ -22,7 +22,7 @@ use chrono::{
     Utc,
 };
 use futures_core::future::BoxFuture;
-use http:: method::Method;
+use http::method::Method;
 use hyper::{
     Body as HttpBody,
     Request,
@@ -119,7 +119,9 @@ impl<'a> AwsRequest for PutObject<'a> {
             .payload_hash(Some(&self.contents))?
             .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
 
-        Ok(request.body(HttpBody::from(self.contents)).map_err(error::Internal::from)?)
+        Ok(request
+            .body(HttpBody::from(self.contents))
+            .map_err(error::Internal::from)?)
     }
 
     fn into_response(

@@ -26,3 +26,13 @@ pub struct MetricsAndOperator {
     #[serde(rename = "Tag")]
     tags: Vec<Tag>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+#[serde(rename = "ListBucketMetricsConfigurationsOutput")]
+pub struct BucketMetricsConfigs {
+    metrics_configuration: Vec<BucketMetrics>,
+    continuation_token: String,
+    is_truncated: bool,
+    next_continuation_token: String,
+}

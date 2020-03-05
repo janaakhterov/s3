@@ -1,9 +1,7 @@
 use crate::{
     error,
-    request::{
-        get::object::GetObjectResponse,
-        list_buckets::Bucket,
-    },
+    request::get::object::GetObjectResponse,
+    types::Bucket,
     AwsRequest,
     CreateBucket,
     DeleteObject,
@@ -106,7 +104,9 @@ impl Client {
         }
 
         // If we've exhausted all possible credential providers we will error out
-        Err(error::Error::from(error::Credentials::CouldNotFindCredentials))?
+        Err(error::Error::from(
+            error::Credentials::CouldNotFindCredentials,
+        ))?
     }
 
     /// Helper method to construct a new builder
@@ -174,7 +174,10 @@ impl Client {
 
         println!("{:#?}", request);
 
-        let response = self.client.request(request).await
+        let response = self
+            .client
+            .request(request)
+            .await
             .map_err(error::Internal::from)?;
 
         println!("{:#?}", response);

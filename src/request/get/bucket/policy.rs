@@ -1,10 +1,10 @@
 use crate::{
+    request::sub_resource::SubResource,
     AwsRequest,
     Error,
     QueryParameter,
     Region,
     SigningKey,
-    request::sub_resource::SubResource,
 };
 use futures_core::future::BoxFuture;
 use http::method::Method;
