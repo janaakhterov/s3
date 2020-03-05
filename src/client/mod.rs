@@ -68,9 +68,30 @@ impl Client {
         let access_key = std::env::var(AWS_ACCESS_KEY);
         let secret_key = std::env::var(AWS_SECRET_KEY);
 
-        if let (Ok(access_key), Ok(secret_key)) = (access_key, secret_key) {
-            return Client::new(access_key, secret_key, Region::UsEast1, host);
+        #[allow(unused_mut, unused_assignments)]
+        let mut region = Region::UsEast1;
+
+        #[cfg(feature = "credential_file")]
+        {
+            println!("Getting config file");
+            region = if let Ok(contents) = std::fs::read_to_string(&std::path::Path::new(&shellexpand::tilde("~/.aws/config").to_string())) {
+                println!("{:?}", contents);
+                if let Some(config) = crate::parser::config::config("default", &contents)? {
+                    println!("{:?}", config);
+                    config.get("region").map(|&region| Region::from(region))
+                } else {
+                    None
+                }
+            } else {
+                println!("Got error reading contents");
+                None
+            }.unwrap_or(Region::UsEast1)
         }
+
+        if let (Ok(access_key), Ok(secret_key)) = (access_key, secret_key) {
+            return Client::new(access_key, secret_key, region, host);
+        }
+
 
         #[cfg(feature = "credential_file")]
         {
@@ -89,7 +110,7 @@ impl Client {
                         return Client::new(
                             cred.aws_access_key_id,
                             cred.aws_secret_access_key,
-                            Region::UsEast1,
+                            region,
                             host,
                         )
                     }

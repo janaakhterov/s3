@@ -21,7 +21,7 @@ pub struct Grantee {
     #[serde(rename = "ID")]
     id: Option<String>,
 
-    #[serde(rename = "Type")]
+    #[serde(rename = "xsi:type")]
     r#type: String,
 
     #[serde(rename = "URI")]

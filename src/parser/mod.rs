@@ -13,6 +13,7 @@ use nom::{
     tuple,
 };
 
+pub(crate) mod config;
 pub(crate) mod credentials;
 mod key;
 mod profile;
@@ -25,10 +26,10 @@ enum Token {
     Comment,
 }
 
-named!(pub(super) comment(&str) -> (&str, &str, (Vec<&str>, &str)), 
+named!(pub(super) comment(&str) -> (&str, &str, (Vec<&str>, &str)),
     tuple!(
-        space0, 
-        pound, 
+        space0,
+        pound,
         many_till!(take!(1), alt!(line_ending | eof))
     )
 );

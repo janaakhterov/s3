@@ -1,5 +1,8 @@
 use super::profile::profiles;
-use crate::Error;
+use crate::{
+    error,
+    Error,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct Credentials<'a> {
@@ -12,7 +15,7 @@ pub(crate) fn credentials<'a>(
     input: &'a str,
 ) -> Result<Option<Credentials<'a>>, Error> {
     let profiles = profiles(input)
-        .map_err(|_| Error::AwsCredentialsParseError)?
+        .map_err(|_| error::Credentials::AwsCredentialsParseError)?
         .1;
     let mut aws_access_key_id: Option<&'a str> = None;
     let mut aws_secret_access_key: Option<&'a str> = None;

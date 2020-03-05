@@ -8,7 +8,6 @@ use serde::Deserialize;
 pub struct BucketAcl {
     #[serde(rename = "Owner")]
     owner: Owner,
-
     #[serde(rename = "AccessControlList")]
     list: AccessControlList,
 }
