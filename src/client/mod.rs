@@ -74,7 +74,9 @@ impl Client {
         #[cfg(feature = "credential_file")]
         {
             println!("Getting config file");
-            region = if let Ok(contents) = std::fs::read_to_string(&std::path::Path::new(&shellexpand::tilde("~/.aws/config").to_string())) {
+            region = if let Ok(contents) = std::fs::read_to_string(&std::path::Path::new(
+                &shellexpand::tilde("~/.aws/config").to_string(),
+            )) {
                 println!("{:?}", contents);
                 if let Some(config) = crate::parser::config::config("default", &contents)? {
                     println!("{:?}", config);
@@ -85,13 +87,13 @@ impl Client {
             } else {
                 println!("Got error reading contents");
                 None
-            }.unwrap_or(Region::UsEast1)
+            }
+            .unwrap_or(Region::UsEast1)
         }
 
         if let (Ok(access_key), Ok(secret_key)) = (access_key, secret_key) {
             return Client::new(access_key, secret_key, region, host);
         }
-
 
         #[cfg(feature = "credential_file")]
         {

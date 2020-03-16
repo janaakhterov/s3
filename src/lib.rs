@@ -24,7 +24,10 @@ pub use crate::{
     aws_request::AwsRequest,
     cache::CacheControl,
     client::Client,
-    error::Error,
+    error::{
+        Error,
+        Result,
+    },
     region::Region,
     request::*,
     storage_class::StorageClass,

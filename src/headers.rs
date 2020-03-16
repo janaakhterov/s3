@@ -1,5 +1,6 @@
 pub struct Headers;
 
+#[allow(dead_code)]
 impl Headers {
     pub const AUTHORIZATION: &'static str = "authorization";
     pub const CACHE_CONTROL: &'static str = "cache-control";

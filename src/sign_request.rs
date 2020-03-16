@@ -147,12 +147,12 @@ impl SignRequest for Builder {
         let sig = signing_key.sign(string_to_sign);
 
         let auth = format!(
-        "AWS4-HMAC-SHA256 Credential={access_key}/{scope},SignedHeaders={signed_headers},Signature={signature}",
-        access_key = access_key.as_ref(),
-        scope = scope,
-        signed_headers = signed,
-        signature = sig
-    );
+            "AWS4-HMAC-SHA256 Credential={access_key}/{scope},SignedHeaders={signed_headers},Signature={signature}",
+            access_key = access_key.as_ref(),
+            scope = scope,
+            signed_headers = signed,
+            signature = sig
+        );
 
         Ok(self.header(
             Headers::AUTHORIZATION,

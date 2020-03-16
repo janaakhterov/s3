@@ -1,6 +1,8 @@
+use super::{
+    CommonPrefix,
+    Owner,
+};
 use serde::Deserialize;
-use super::CommonPrefix;
-use super::Owner;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename = "GetBucketVersioningOutput")]
@@ -50,5 +52,5 @@ pub struct ObjectVersion {
     owner: Option<Owner>,
     size: Option<u32>,
     storage_class: Option<String>,
-    version_id: Option<String>
+    version_id: Option<String>,
 }

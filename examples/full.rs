@@ -20,7 +20,7 @@ async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv()?;
 
     let client = Client::load("http://s3.amazonaws.com/")?;
-   
+
     // let resp = CreateBucket::new("cadims")
     //     .location(Region::UsWest1)
     //     .send(&client)

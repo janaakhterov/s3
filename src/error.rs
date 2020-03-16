@@ -10,6 +10,8 @@ pub struct AwsResponseError {
     pub message: String,
 }
 
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 #[derive(Debug, Error)]
 #[error("S3 responded with an status code {status}")]
 pub struct ResponseError {
@@ -19,6 +21,9 @@ pub struct ResponseError {
 
 #[derive(Debug, Error)]
 pub enum Internal {
+    #[error("Internal Error: {0:?}")]
+    Message(String),
+
     #[error("Error sending request")]
     RequestError(#[from] hyper::Error),
 

@@ -1,15 +1,11 @@
 use crate::{
-    error,
     AwsRequest,
     AwsResponse,
     Error,
     Gmt,
     Headers,
-    Host,
-    OptionalHeader,
-    PayloadHash,
     Region,
-    SignRequest,
+    Request,
     SigningKey,
     StorageClass,
 };
@@ -21,7 +17,7 @@ use futures_core::future::BoxFuture;
 use hyper::{
     Body as HttpBody,
     Method,
-    Request,
+    Request as HttpRequest,
     Response,
     StatusCode,
 };
@@ -34,32 +30,6 @@ use std::{
     },
 };
 use url::Url;
-
-// GetObject request Headers, this list *MUST* be in
-// sorted order as it is used in the signing process
-// of each request.
-pub(super) const HEADERS: [&str; 20] = [
-    Headers::HOST,
-    Headers::IF_MATCH,
-    Headers::IF_MODIFIED_SINCE,
-    Headers::IF_NONE_MATCH,
-    Headers::IF_UNMODIFIED_SINCE,
-    Headers::PART_NUMBER,
-    Headers::RANGE,
-    Headers::REQUEST_PAYER,
-    Headers::RESPONSE_CACHE_CONTROL,
-    Headers::RESPONSE_CONTENT_DISPOSITION,
-    Headers::RESPONSE_CONTENT_ENCODING,
-    Headers::RESPONSE_CONTENT_LANGUAGE,
-    Headers::RESPONSE_CONTENT_TYPE,
-    Headers::RESPONSE_EXPIRES,
-    Headers::SSE_CUSTOMER_ALGORITHM,
-    Headers::SSE_CUSTOMER_KEY,
-    Headers::SSE_CUSTOMER_KEY_MD5,
-    Headers::VERSION_ID,
-    Headers::X_AMZ_CONTENT_SHA256,
-    Headers::X_AMZ_DATE,
-];
 
 // Reason for `R: FromGetObjectResponse` is because the response
 // of the get request will become optional if any of the `if_*`
@@ -201,28 +171,25 @@ impl<'a> AwsRequest for GetObject<'a, GetObjectResponse> {
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
-    ) -> Result<Request<HttpBody>, Error> {
-        let request = Request::builder()
-            .method(Method::GET)
-            .host(url, self.bucket, self.key, None)?
-            .optional_header(Headers::IF_MATCH, &self.if_match)?
-            .optional_header(
+    ) -> Result<HttpRequest<HttpBody>, Error> {
+        Request::new(Method::GET)
+            .bucket(self.bucket)
+            .key(self.key)
+            .host(url)?
+            .region(region)
+            .header(Headers::IF_MATCH, self.if_match)
+            .header(
                 Headers::IF_MODIFIED_SINCE,
-                &self.if_modified_since.map(|since| since.to_gmt()),
-            )?
-            .optional_header(Headers::IF_NONE_MATCH, &self.if_none_match)?
-            .optional_header(
+                self.if_modified_since.map(|since| since.to_gmt()),
+            )
+            .header(Headers::IF_NONE_MATCH, self.if_none_match)
+            .header(
                 Headers::IF_UNMODIFIED_SINCE,
-                &self.if_unmodified_since.map(|since| since.to_gmt()),
-            )?
-            .optional_header(Headers::RANGE, &self.range)?
-            .optional_header(Headers::VERSION_ID, &self.version_id)?
-            .payload_hash(None)?
-            .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
-
-        Ok(request
-            .body(HttpBody::empty())
-            .map_err(error::Internal::from)?)
+                self.if_unmodified_since.map(|since| since.to_gmt()),
+            )
+            .header(Headers::RANGE, self.range.clone())
+            .header(Headers::VERSION_ID, self.version_id)
+            .build(&access_key.as_ref(), &signing_key)
     }
 
     fn into_response(
@@ -241,7 +208,7 @@ impl<'a> AwsRequest for GetObject<'a, Option<GetObjectResponse>> {
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
-    ) -> Result<Request<HttpBody>, Error> {
+    ) -> Result<HttpRequest<HttpBody>, Error> {
         <GetObject<GetObjectResponse> as AwsRequest>::into_request(
             GetObject {
                 bucket: self.bucket,
