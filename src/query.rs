@@ -13,6 +13,7 @@ use std::{
 
 pub struct QueryParameter;
 
+#[allow(dead_code)]
 impl QueryParameter {
     pub const ENCRYPTION: &'static str = "encryption";
     pub const INVENTORY: &'static str = "inventory";

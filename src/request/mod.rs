@@ -30,26 +30,36 @@ use std::{
 use url::Url;
 
 macro_rules! impl_sub_resource {
-    ($name: ident => $output: ty) => {
+    ($name: ident => $output: ty, $(($query: ident => $value: expr)),*) => {
         use crate::{
             error,
             AwsRequest,
+            AwsResponse,
             Error,
             QueryParameter,
             Region,
             SigningKey,
-            SubResource,
+            Request,
         };
         use futures_core::future::BoxFuture;
         use hyper::{
             Body as HttpBody,
             Method,
-            Request,
+            Request as HttpRequest,
             Response,
         };
         use url::Url;
 
-        pub struct $name<'a>(SubResource<'a>);
+        pub struct $name<'a> {
+            bucket: &'a str
+        }
+
+        impl<'a> $name<'a> {
+            /// Create a new GetBucketAcl request with default parameters
+            pub fn new(bucket: &'a str) -> Self {
+                Self { bucket }
+            }
+        }
 
         impl<'a> AwsRequest for $name<'a> {
             type Response = $output;
@@ -60,15 +70,22 @@ macro_rules! impl_sub_resource {
                 access_key: AR,
                 signing_key: &SigningKey,
                 region: Region,
-            ) -> Result<Request<HttpBody>, Error> {
-                self.0.into_request(url, access_key, signing_key, region)
+            ) -> Result<HttpRequest<HttpBody>, Error> {
+                Request::new(Method::DELETE)
+                    .bucket(self.bucket)
+                    .host(url.clone())?
+                    .region(region)
+                    $(
+                        .query(QueryParameter::$query, $value)
+                    )*
+                    .build(&access_key.as_ref(), &signing_key)
             }
 
             fn into_response(
-                response: Response<HttpBody>,
+                mut response: Response<HttpBody>,
             ) -> BoxFuture<'static, Result<Self::Response, Error>> {
                 Box::pin(async move {
-                    let bytes = SubResource::<'a>::into_response(response).await?;
+                    let bytes = response.error().await?;
                     let string = String::from_utf8_lossy(&bytes);
 
                     println!("-------------------------------------");
@@ -85,22 +102,22 @@ macro_rules! impl_sub_resource {
     };
 }
 
-pub mod create_bucket;
-pub mod list_buckets;
+// pub mod create_bucket;
+// pub mod list_buckets;
 // pub mod put_bucket_encryption;
-pub mod put_object;
+// pub mod put_object;
 
-pub mod delete;
+// pub mod delete;
 pub mod get;
 
 pub(crate) mod sub_resource;
 
-pub use create_bucket::*;
-pub use list_buckets::*;
+// pub use create_bucket::*;
+// pub use list_buckets::*;
 // pub use put_bucket_encryption::*;
-pub use put_object::*;
+// pub use put_object::*;
 
-pub use delete::*;
+// pub use delete::*;
 pub use get::*;
 
 const NO_PAYLOAD_HASH: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";

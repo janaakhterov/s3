@@ -3,12 +3,12 @@ use crate::{
     request::get::object::GetObjectResponse,
     types::Bucket,
     AwsRequest,
-    CreateBucket,
-    DeleteObject,
+    // CreateBucket,
+    // DeleteObject,
     Error,
     GetObject,
-    ListBuckets,
-    PutObject,
+    // ListBuckets,
+    // PutObject,
     Region,
     SigningKey,
 };
@@ -146,45 +146,45 @@ impl Client {
         self.send(request).await
     }
 
-    /// A convience method for a `PutObject` request.
-    ///
-    /// Note: If more control is needed over the request parameters use the
-    /// `Client::send()` method directly
-    pub async fn put<'a>(
-        &self,
-        bucket: &'a str,
-        key: &'a str,
-        contents: Vec<u8>,
-    ) -> Result<String, Error> {
-        let request = PutObject::new(bucket, key, contents);
-        self.send(request).await
-    }
+    ///// A convience method for a `PutObject` request.
+    /////
+    ///// Note: If more control is needed over the request parameters use the
+    ///// `Client::send()` method directly
+    //pub async fn put<'a>(
+    //    &self,
+    //    bucket: &'a str,
+    //    key: &'a str,
+    //    contents: Vec<u8>,
+    //) -> Result<String, Error> {
+    //    let request = PutObject::new(bucket, key, contents);
+    //    self.send(request).await
+    //}
 
-    /// A convience method for a `DeleteObject` request.
-    ///
-    /// Note: If more control is needed over the request parameters use the
-    /// `Client::send()` method directly
-    pub async fn delete<'a>(&self, bucket: &'a str, key: &'a str) -> Result<bool, Error> {
-        let request = DeleteObject::new(bucket, key);
-        self.send(request).await
-    }
+    ///// A convience method for a `DeleteObject` request.
+    /////
+    ///// Note: If more control is needed over the request parameters use the
+    ///// `Client::send()` method directly
+    //pub async fn delete<'a>(&self, bucket: &'a str, key: &'a str) -> Result<bool, Error> {
+    //    let request = DeleteObject::new(bucket, key);
+    //    self.send(request).await
+    //}
 
-    /// A convience method for a `CreateBucket` request.
-    ///
-    /// Note: If more control is needed over the request parameters use the
-    /// `Client::send()` method directly
-    pub async fn create<'a>(&self, bucket: &'a str) -> Result<(), Error> {
-        let request = CreateBucket::new(bucket);
-        self.send(request).await
-    }
+    ///// A convience method for a `CreateBucket` request.
+    /////
+    ///// Note: If more control is needed over the request parameters use the
+    ///// `Client::send()` method directly
+    //pub async fn create<'a>(&self, bucket: &'a str) -> Result<(), Error> {
+    //    let request = CreateBucket::new(bucket);
+    //    self.send(request).await
+    //}
 
-    /// A convience method for a `ListBuckets` request.
-    ///
-    /// Note: If more control is needed over the request parameters use the
-    /// `Client::send()` method directly
-    pub async fn list_buckets(&self) -> Result<Vec<Bucket>, Error> {
-        self.send(ListBuckets).await
-    }
+    ///// A convience method for a `ListBuckets` request.
+    /////
+    ///// Note: If more control is needed over the request parameters use the
+    ///// `Client::send()` method directly
+    //pub async fn list_buckets(&self) -> Result<Vec<Bucket>, Error> {
+    //    self.send(ListBuckets).await
+    //}
 
     /// Sends any S3 request and returns the requests response type.
     pub async fn send<T: AwsRequest>(&self, request: T) -> Result<T::Response, Error> {
