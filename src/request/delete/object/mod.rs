@@ -1,20 +1,16 @@
 use crate::{
-    error,
+    Request,
     AwsRequest,
     AwsResponse,
     Error,
-    Headers,
-    Host,
-    PayloadHash,
     Region,
-    SignRequest,
     SigningKey,
 };
 use futures_core::future::BoxFuture;
 use http::method::Method;
 use hyper::{
     Body as HttpBody,
-    Request,
+    Request as HttpRequest,
     Response,
 };
 use url::Url;
@@ -22,15 +18,6 @@ use url::Url;
 pub mod tagging;
 
 pub use tagging::*;
-
-// DeleteObject requset Headers, this list *MUST* be in
-// sorted order as it is used in the signing process
-// of each request.
-const HEADERS: [&str; 3] = [
-    Headers::HOST,
-    Headers::X_AMZ_CONTENT_SHA256,
-    Headers::X_AMZ_DATE,
-];
 
 pub struct DeleteObject<'a> {
     /// The bucket name of the bucket containing the object.
@@ -56,16 +43,13 @@ impl<'a> AwsRequest for DeleteObject<'a> {
         access_key: AR,
         signing_key: &SigningKey,
         region: Region,
-    ) -> Result<Request<HttpBody>, Error> {
-        let request = Request::builder()
-            .method(Method::DELETE)
-            .host(url, self.bucket, self.key, None)?
-            .payload_hash(None)?
-            .sign(&access_key.as_ref(), &signing_key, region.clone(), &HEADERS)?;
-
-        Ok(request
-            .body(HttpBody::empty())
-            .map_err(error::Internal::from)?)
+    ) -> Result<HttpRequest<HttpBody>, Error> {
+        Request::new(Method::DELETE)
+            .bucket(self.bucket)
+            .key(self.key)
+            .host(url.clone())?
+            .region(region)
+            .build(&access_key.as_ref(), &signing_key)
     }
 
     fn into_response(
